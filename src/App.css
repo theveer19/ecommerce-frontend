@@ -34,5 +34,46 @@
   }
   to {
     transform: rotate(360deg);
+
+    @keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
+
+/* 🌈 Gradient animation */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 🎥 Fade-in effect */
+.fade-in {
+  animation: fadeIn 1.2s ease forwards;
+  opacity: 0;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🌟 Icon hover glow */
+.icon-hover:hover {
+  transform: scale(1.2) rotate(5deg);
+  color: #FFD700;
+  text-shadow: 0 0 12px #FFD700;
+  transition: all 0.3s ease;
+}
+
+
+  }
+  
+}
+

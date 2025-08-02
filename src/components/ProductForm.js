@@ -17,7 +17,7 @@ export default function ProductForm() {
     // Upload image to Supabase Storage
     if (image) {
       const fileName = `${Date.now()}_${image.name}`;
-      const { data, error: uploadError } = await supabase.storage
+      const {error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(fileName, image);
 

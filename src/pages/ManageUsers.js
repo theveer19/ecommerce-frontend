@@ -8,7 +8,7 @@ const ManageUsers = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('product').select('id, email, role');
+    const { data, error } = await supabase.from('users').select('id, email, role');
 
     if (error) {
       console.error('Error fetching users:', error.message);

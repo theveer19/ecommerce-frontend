@@ -13,11 +13,16 @@ import AdminPage from './pages/AdminPage';
 import AdminOrders from './pages/AdminOrders';
 import ManageProducts from './pages/ManageProducts';
 import ManageUsers from './pages/ManageUsers';
+import CheckoutPage from './pages/CheckoutPage';
+import ThankYouPage from './pages/ThankYouPage';
+import ProductDetailsPage from './pages/ProductDetailsPage'; 
+import Footer from './components/Footer';  // ✅ NEW FOOTER IMPORT
 
 function App() {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
+  // ✅ Check user session & fetch role
   useEffect(() => {
     const getSessionAndRole = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -37,6 +42,7 @@ function App() {
     };
   }, []);
 
+  // ✅ Fetch user role
   const fetchUserRole = async (userId) => {
     const { data, error } = await supabase
       .from('users')
@@ -61,6 +67,7 @@ function App() {
     <CartProvider>
       <Router>
         <Navbar userRole={userRole} />
+
         <Routes>
           <Route
             path="/"
@@ -79,10 +86,17 @@ function App() {
               )
             }
           />
+
+          {/* ✅ Product Details Page */}
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
+
+          {/* ✅ Cart, Orders, Checkout */}
           <Route path="/cart" element={session ? <CartPage /> : <Navigate to="/" />} />
           <Route path="/orders" element={session ? <OrderHistory /> : <Navigate to="/" />} />
+          <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/" />} />
+          <Route path="/thank-you" element={<ThankYouPage />} />
 
-          {/* Admin-only routes */}
+          {/* ✅ Admin-only routes */}
           {userRole === 'admin' && (
             <>
               <Route path="/admin" element={<AdminPage />} />
@@ -92,6 +106,9 @@ function App() {
             </>
           )}
         </Routes>
+
+        {/* ✅ Footer will show on all pages */}
+        <Footer />
       </Router>
     </CartProvider>
   );
