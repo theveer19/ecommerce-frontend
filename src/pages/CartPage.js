@@ -1,56 +1,93 @@
-import React, { useState } from 'react';
-import { useCart } from '../context/CartContext';
-import { supabase } from '../supabase/supabaseClient';
+// src/pages/CartPage.js
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, clearCart } = useCart();
-  const [successMessage, setSuccessMessage] = useState('');
+  const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();
+  const navigate = useNavigate();
 
-  const handlePlaceOrder = async () => {
-    if (cartItems.length === 0) return;
+  const handleRemove = (id) => removeFromCart(id);
 
-    const user = await supabase.auth.getUser();
-    const user_id = user?.data?.user?.id;
-
-    const total_amount = cartItems.reduce((sum, item) => sum + item.price, 0);
-
-    const { error } = await supabase.from('orders').insert([
-      {
-        user_id,
-        total_amount,
-        items: cartItems,
-      },
-    ]);
-
-    if (error) {
-      console.error('Order failed:', error);
-      setSuccessMessage('❌ Order failed. Please try again.');
-    } else {
-      setSuccessMessage('✅ Order placed successfully!');
-      clearCart();
-    }
+  const handleCheckout = () => {
+    // Navigate to checkout page (CheckoutPage will handle Razorpay)
+    navigate("/checkout");
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div style={{ padding: "1.5rem" }}>
       <h2>🛒 Your Cart</h2>
+
       {cartItems.length === 0 ? (
         <p>Your cart is empty.</p>
       ) : (
         <>
-          <ul>
-            {cartItems.map((item, index) => (
-              <li key={index}>
-                {item.name} - ₹{item.price}
-                <button onClick={() => removeFromCart(item.id)}>Remove</button>
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {cartItems.map((item, idx) => (
+              <li
+                key={`${item.id}-${idx}`}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "10px 0",
+                  borderBottom: "1px solid #eee",
+                }}
+              >
+                <div>
+                  <strong>{item.name}</strong>
+                  <div>₹{item.price} × {item.quantity || 1}</div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <input
+                    aria-label={`qty-${item.id}`}
+                    type="number"
+                    min="1"
+                    value={item.quantity || 1}
+                    onChange={(e) => {
+                      const q = parseInt(e.target.value, 10);
+                      if (!isNaN(q)) updateQuantity(item.id, q);
+                    }}
+                    style={{ width: "70px", padding: "6px" }}
+                  />
+                  <button
+                    onClick={() => handleRemove(item.id)}
+                    style={{
+                      background: "#ff4d4f",
+                      color: "#fff",
+                      border: "none",
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
-          <h3>Total: ₹{cartItems.reduce((sum, item) => sum + item.price, 0)}</h3>
-          <button onClick={handlePlaceOrder}>Place Order</button>
+
+          <div style={{ marginTop: "1rem", textAlign: "right" }}>
+            <h3>Total: ₹{getCartTotal().toFixed(2)}</h3>
+            <button
+              onClick={handleCheckout}
+              style={{
+                marginTop: "10px",
+                padding: "10px 18px",
+                backgroundColor: "#3399cc",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+            >
+              Proceed to Checkout
+            </button>
+          </div>
         </>
       )}
-      {successMessage && <p>{successMessage}</p>}
     </div>
   );
 }

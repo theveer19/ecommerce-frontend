@@ -44,20 +44,31 @@ function App() {
 
   // ✅ Fetch user role
   const fetchUserRole = async (userId) => {
+  try {
+    if (!userId) {
+      setUserRole(null);
+      return;
+    }
+
+    // Use maybeSingle() to avoid 406 when no row exists
     const { data, error } = await supabase
       .from('users')
       .select('role')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (data?.role) {
-      setUserRole(data.role);
-    } else {
+    if (error) {
       console.error('Error fetching role:', error);
       setUserRole(null);
+      return;
     }
-  };
 
+    setUserRole(data?.role ?? null);
+  } catch (err) {
+    console.error('Error fetching role:', err);
+    setUserRole(null);
+  }
+};
   const handleLogin = (session) => {
     setSession(session);
     if (session?.user) fetchUserRole(session.user.id);

@@ -1,62 +1,91 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import confetti from "canvas-confetti";
 
 export default function ThankYouPage() {
   const location = useLocation();
   const orderDetails = location.state?.orderDetails;
 
+  useEffect(() => {
+    // 🎉 Trigger confetti once
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+    });
+  }, []);
+
   return (
-    <div style={{
-      background: "#f3f3f3",
-      minHeight: "100vh",
-      padding: "50px 20px",
-      textAlign: "center"
-    }}>
-      <div style={{
-        background: "white",
-        maxWidth: "600px",
-        margin: "0 auto",
-        padding: "30px",
-        borderRadius: "12px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-      }}>
-        <h1 style={{ color: "#1a8917", fontSize: "2rem" }}>✅ Thank you for your order!</h1>
-        <p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-          Your order has been successfully placed.
+    <div
+      style={{
+        background: "#f9fafb",
+        minHeight: "100vh",
+        padding: "50px 20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          maxWidth: "600px",
+          width: "100%",
+          padding: "30px",
+          borderRadius: "16px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ color: "#22c55e", fontSize: "2rem", marginBottom: "10px" }}>
+          ✅ Thank you for your order!
+        </h1>
+        <p style={{ fontSize: "1.1rem", marginBottom: "25px", color: "#555" }}>
+          Your order has been successfully placed. We’ll reach out soon!
         </p>
 
-        {orderDetails && (
-          <div style={{
-            border: "1px solid #ddd",
-            padding: "15px",
-            borderRadius: "8px",
-            marginBottom: "20px",
-            textAlign: "left"
-          }}>
-            <h3>📦 <b>Order Summary</b></h3>
-            <p><strong>Order ID:</strong> {orderDetails.id}</p>
-            <p><strong>Total Amount:</strong> ₹{orderDetails.total_amount}</p>
-            <p><strong>Payment Method:</strong> {orderDetails.payment_method}</p>
-            <p><strong>Shipping Address:</strong> {orderDetails.address}</p>
-            <p><strong>Phone:</strong> {orderDetails.phone}</p>
-            <h4>🛒 Items:</h4>
-            <ul>
+        {orderDetails ? (
+          <div
+            style={{
+              textAlign: "left",
+              backgroundColor: "#f1f5f9",
+              padding: "20px",
+              borderRadius: "12px",
+              marginBottom: "30px",
+            }}
+          >
+            <h3 style={{ marginBottom: "10px" }}>📦 <b>Order Summary</b></h3>
+            <p><strong>🆔 Order ID:</strong> {orderDetails.id}</p>
+            <p><strong>💰 Total Amount:</strong> ₹{orderDetails.total_amount}</p>
+            <p><strong>💳 Payment Method:</strong> {orderDetails.payment_method}</p>
+            <p><strong>🏠 Address:</strong> {orderDetails.address}</p>
+            <p><strong>📞 Phone:</strong> {orderDetails.phone}</p>
+            <h4 style={{ marginTop: "10px" }}>🛒 Items:</h4>
+            <ul style={{ paddingLeft: "20px" }}>
               {orderDetails.items?.map((item, idx) => (
-                <li key={idx}>{item.name} – ₹{item.price}</li>
+                <li key={idx}>
+                  {item.name} – ₹{item.price}
+                </li>
               ))}
             </ul>
           </div>
+        ) : (
+          <p>⚠️ No order details found.</p>
         )}
 
         <Link to="/products">
-          <button style={{
-            backgroundColor: "#FFD814",
-            border: "1px solid #FCD200",
-            padding: "12px 25px",
-            fontSize: "16px",
-            borderRadius: "8px",
-            cursor: "pointer"
-          }}>
+          <button
+            style={{
+              backgroundColor: "#ffd814",
+              border: "none",
+              padding: "12px 25px",
+              fontSize: "16px",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            }}
+          >
             🛍 Continue Shopping
           </button>
         </Link>

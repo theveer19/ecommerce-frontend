@@ -181,12 +181,38 @@ export default function Auth({ onLogin }) {
           Or continue with:
         </Typography>
         <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
-          <Button variant="outlined" startIcon={<GoogleIcon />} fullWidth>
-            Google
-          </Button>
-          <Button variant="outlined" startIcon={<GitHubIcon />} fullWidth>
-            GitHub
-          </Button>
+          <Button
+  variant="outlined"
+  startIcon={<GoogleIcon />}
+  fullWidth
+  onClick={() =>
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin, // Optional: ensure return to your site
+      },
+    })
+  }
+>
+  Google
+</Button>
+
+<Button
+  variant="outlined"
+  startIcon={<GitHubIcon />}
+  fullWidth
+  onClick={() =>
+    supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    })
+  }
+>
+  GitHub
+</Button>
+
         </Box>
 
         {/* ✅ Message */}
