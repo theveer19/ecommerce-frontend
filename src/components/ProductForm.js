@@ -1,166 +1,192 @@
-// components/ProductForm.js (Enhanced & Beautiful)
-import React, { useState } from 'react';
+// src/components/ProductForm.js
+import React, { useState } from "react";
+import { supabase } from "../supabase/supabaseClient";
 import {
   Box,
   Button,
   TextField,
   Typography,
   Paper,
-  Grid,
-  InputAdornment,
-  Snackbar,
-  Alert,
-} from '@mui/material';
-import { supabase } from '../supabase/supabaseClient';
-import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
-import { styled } from '@mui/system';
-
-const UploadInput = styled('input')({
-  display: 'none',
-});
+  IconButton,
+} from "@mui/material";
+import { Add, Delete } from "@mui/icons-material";
 
 export default function ProductForm() {
-  const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    image: null,
-  });
-  const [preview, setPreview] = useState(null);
-  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [description, setDescription] = useState("");
+  const [specifications, setSpecifications] = useState([{ key: "", value: "" }]);
+  const [faqs, setFaqs] = useState([{ q: "", a: "" }]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProduct({ ...product, [name]: value });
+  const handleAddSpec = () => {
+    setSpecifications([...specifications, { key: "", value: "" }]);
   };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProduct({ ...product, image: file });
-      setPreview(URL.createObjectURL(file));
-    }
+  const handleSpecChange = (index, field, value) => {
+    const updated = [...specifications];
+    updated[index][field] = value;
+    setSpecifications(updated);
+  };
+
+  const handleRemoveSpec = (index) => {
+    const updated = [...specifications];
+    updated.splice(index, 1);
+    setSpecifications(updated);
+  };
+
+  const handleAddFaq = () => {
+    setFaqs([...faqs, { q: "", a: "" }]);
+  };
+
+  const handleFaqChange = (index, field, value) => {
+    const updated = [...faqs];
+    updated[index][field] = value;
+    setFaqs(updated);
+  };
+
+  const handleRemoveFaq = (index) => {
+    const updated = [...faqs];
+    updated.splice(index, 1);
+    setFaqs(updated);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let imageUrl = '';
 
-    if (product.image) {
-      const { data, error } = await supabase.storage
-        .from('product-images')
-        .upload(`products/${Date.now()}-${product.image.name}`, product.image);
-
-      if (error) {
-        console.error('Image upload error:', error);
-        return;
-      }
-
-      const { publicUrl } = supabase.storage.from('product-images').getPublicUrl(data.path);
-      imageUrl = publicUrl;
-    }
-
-    const { error } = await supabase.from('products').insert([
+    const { data, error } = await supabase.from("products").insert([
       {
-        name: product.name,
-        description: product.description,
-        price: parseFloat(product.price),
+        name,
+        price: parseFloat(price),
         image_url: imageUrl,
+        description,
+        specifications: specifications.reduce((acc, cur) => {
+          if (cur.key && cur.value) acc[cur.key] = cur.value;
+          return acc;
+        }, {}),
+        faqs: faqs.filter((faq) => faq.q && faq.a),
       },
     ]);
 
     if (error) {
-      console.error('Product insert error:', error);
+      console.error("Error inserting product:", error);
+      alert("Failed to add product!");
     } else {
-      setOpen(true);
-      setProduct({ name: '', description: '', price: '', image: null });
-      setPreview(null);
+      alert("Product added successfully!");
+      setName("");
+      setPrice("");
+      setImageUrl("");
+      setDescription("");
+      setSpecifications([{ key: "", value: "" }]);
+      setFaqs([{ q: "", a: "" }]);
     }
   };
 
   return (
-    <Paper elevation={3} sx={{ maxWidth: 600, mx: 'auto', p: 4, mt: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        🛍️ Add New Product
+    <Paper sx={{ p: 4, maxWidth: 700, margin: "30px auto" }}>
+      <Typography variant="h4" gutterBottom>
+        Add New Product
       </Typography>
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Product Name"
-              name="name"
-              value={product.name}
-              onChange={handleChange}
-              required
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              multiline
-              rows={3}
-              value={product.description}
-              onChange={handleChange}
-              required
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              label="Price"
-              name="price"
-              type="number"
-              value={product.price}
-              onChange={handleChange}
-              InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-              }}
-              required
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <label htmlFor="upload-image">
-              <UploadInput
-                accept="image/*"
-                id="upload-image"
-                type="file"
-                onChange={handleImageUpload}
-              />
-              <Button
-                component="span"
-                variant="outlined"
-                startIcon={<AddPhotoAlternateIcon />}
-              >
-                Upload Image
-              </Button>
-            </label>
-            {preview && (
-              <Box mt={2}>
-                <img src={preview} alt="preview" style={{ maxWidth: '100%' }} />
-              </Box>
-            )}
-          </Grid>
-          <Grid item xs={12}>
-            <Button type="submit" fullWidth variant="contained" color="primary">
-              Add Product
-            </Button>
-          </Grid>
-        </Grid>
-      </form>
+        <TextField
+          label="Product Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Price"
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Image URL"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          fullWidth
+          margin="normal"
+          required
+        />
+        <TextField
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          fullWidth
+          margin="normal"
+          multiline
+          rows={3}
+        />
 
-      <Snackbar
-        open={open}
-        autoHideDuration={4000}
-        onClose={() => setOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity="success" sx={{ width: '100%' }}>
-          Product added successfully!
-        </Alert>
-      </Snackbar>
+        {/* Specifications */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6">Specifications</Typography>
+          {specifications.map((spec, index) => (
+            <Box key={index} sx={{ display: "flex", gap: 2, mt: 1 }}>
+              <TextField
+                label="Key"
+                value={spec.key}
+                onChange={(e) =>
+                  handleSpecChange(index, "key", e.target.value)
+                }
+              />
+              <TextField
+                label="Value"
+                value={spec.value}
+                onChange={(e) =>
+                  handleSpecChange(index, "value", e.target.value)
+                }
+              />
+              <IconButton onClick={() => handleRemoveSpec(index)}>
+                <Delete />
+              </IconButton>
+            </Box>
+          ))}
+          <Button startIcon={<Add />} onClick={handleAddSpec} sx={{ mt: 1 }}>
+            Add Specification
+          </Button>
+        </Box>
+
+        {/* FAQs */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6">FAQs</Typography>
+          {faqs.map((faq, index) => (
+            <Box key={index} sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+              <TextField
+                label="Question"
+                value={faq.q}
+                onChange={(e) => handleFaqChange(index, "q", e.target.value)}
+              />
+              <TextField
+                label="Answer"
+                value={faq.a}
+                onChange={(e) => handleFaqChange(index, "a", e.target.value)}
+              />
+              <IconButton onClick={() => handleRemoveFaq(index)}>
+                <Delete />
+              </IconButton>
+            </Box>
+          ))}
+          <Button startIcon={<Add />} onClick={handleAddFaq} sx={{ mt: 1 }}>
+            Add FAQ
+          </Button>
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 3 }}
+        >
+          Save Product
+        </Button>
+      </form>
     </Paper>
   );
 }
