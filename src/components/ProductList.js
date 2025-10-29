@@ -1,147 +1,139 @@
-// components/ProductList.js
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase/supabaseClient';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardMedia,
-  Typography,
-  Button,
-  Grid,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "../supabase/supabaseClient";
+import { useCart } from "../context/CartContext";
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
-  const [sortBy, setSortBy] = useState('newest');
-  const [userRole, setUserRole] = useState(null);
+  const [adding, setAdding] = useState({});
+  const [session, setSession] = useState(null);
+  const { addToCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
+  const gridRef = useRef(null);
 
   useEffect(() => {
+    let mounted = true;
+    
+    // Check session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted) setSession(session);
+    };
+    
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching products:", error);
+      } else if (mounted) {
+        setProducts(data || []);
+      }
+    };
+    
+    checkSession();
     fetchProducts();
-    fetchRole();
-  }, [sortBy]);
+    return () => { mounted = false; };
+  }, []);
 
-  const fetchProducts = async () => {
-    let query = supabase.from('products').select('*');
+  useEffect(() => {
+    // If nav state requested scroll, do it once after products loaded
+    if (location.state?.scrollToGrid && gridRef.current) {
+      setTimeout(() => {
+        gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        // clear the state so reload doesn't scroll again
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 250);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, location.state]);
 
-    if (sortBy === 'priceAsc') query = query.order('price', { ascending: true });
-    else if (sortBy === 'priceDesc') query = query.order('price', { ascending: false });
-    else query = query.order('created_at', { ascending: false });
-
-    const { data, error } = await query;
-
-    if (error) console.error('Error fetching products:', error);
-    else setProducts(data);
+  // ✅ ADDED: Authentication check before adding to cart
+  const handleAdd = (product, e) => {
+    e.stopPropagation(); // Prevent navigation when clicking Add to Cart
+    if (!session) {
+      alert("Please sign in to add items to cart");
+      navigate("/");
+      return;
+    }
+    addToCart({ ...product, quantity: 1 });
+    setAdding((s) => ({ ...s, [product.id]: true }));
+    setTimeout(() => setAdding((s) => ({ ...s, [product.id]: false })), 1400);
   };
 
-  // in ProductList (or similar files)
-const fetchRole = async () => {
-  try {
-    const { data: { session } = {} } = await supabase.auth.getSession();
-    if (!session?.user?.id) {
-      setUserRole(null);
+  // ✅ ADDED: Navigate to product details
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  const handleShopNow = () => {
+    if (location.pathname !== "/products") {
+      navigate("/products", { state: { scrollToGrid: true } });
       return;
     }
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching role:', error);
-      setUserRole(null);
-      return;
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollBy({ top: 600, behavior: "smooth" });
     }
-
-    setUserRole(data?.role ?? null);
-  } catch (err) {
-    console.error('Error fetching role:', err);
-    setUserRole(null);
-  }
-};
-
-
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this product?");
-    if (!confirmed) return;
-
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) alert("Error deleting product");
-    else fetchProducts();
   };
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" className="fade-in" gutterBottom>
-        🛍 All Products
-      </Typography>
+    <>
+      <section className="hero">
+        <div className="container">
+          <h1>Elevate Your Style</h1>
+          <p>Discover premium products with exclusive designs, crafted for those who appreciate the extraordinary.</p>
+          <button onClick={handleShopNow}>Shop Now <i className="fas fa-arrow-right" /></button>
+        </div>
+      </section>
 
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-        <FormControl size="small">
-          <InputLabel>Sort by</InputLabel>
-          <Select value={sortBy} label="Sort by" onChange={(e) => setSortBy(e.target.value)}>
-            <MenuItem value="newest">Newest</MenuItem>
-            <MenuItem value="priceAsc">Price: Low to High</MenuItem>
-            <MenuItem value="priceDesc">Price: High to Low</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+      <main className="container">
+        <h2 className="section-title">Featured Products</h2>
 
-      <Grid container spacing={3}>
-        {products.map((product) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-            <Card
-              sx={{
-                transition: 'transform 0.3s',
-                '&:hover': { transform: 'scale(1.03)' },
-              }}
+        <div className="products-grid" ref={gridRef}>
+          {products.slice(0, 6).map((p) => (
+            <div 
+              className="card product-card" 
+              key={p.id}
+              onClick={() => handleProductClick(p.id)}
+              style={{ cursor: 'pointer' }}
             >
-              <CardMedia
-                component="img"
-                height="180"
-                image={product.image_url || 'https://via.placeholder.com/300'}
-                alt={product.name}
-              />
-              <CardContent>
-                <Typography variant="h6">{product.name}</Typography>
-                <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  ₹{product.price}
-                </Typography>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  sx={{ mb: 1 }}
-                  onClick={() => navigate(`/product/${product.id}`)}
-                >
-                  View Details
-                </Button>
+              <img className="product-image" src={p.image_url || "https://via.placeholder.com/600x400?text=No+Image"} alt={p.name} />
+              <h3 className="product-title">{p.name}</h3>
+              <p className="product-description">{p.description ? (p.description.length > 140 ? p.description.slice(0, 140) + "…" : p.description) : "High-quality product."}</p>
+              <div className="product-price">₹{p.price}</div>
+              <button onClick={(e) => handleAdd(p, e)}>
+                {adding[p.id] ? "Added ✓" : "Add to Cart"}
+              </button>
+            </div>
+          ))}
+        </div>
 
-                {userRole === 'admin' && (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => handleDelete(product.id)}
-                      fullWidth
-                    >
-                      Delete
-                    </Button>
-                    {/* Optional: Add Edit functionality here */}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
+        <h2 className="section-title" style={{ marginTop: 30 }}>New Arrivals</h2>
+
+        <div className="products-grid">
+          {products.slice(6, 12).map((p) => (
+            <div 
+              className="card product-card" 
+              key={p.id}
+              onClick={() => handleProductClick(p.id)}
+              style={{ cursor: 'pointer' }}
+            >
+              <img className="product-image" src={p.image_url || "https://via.placeholder.com/600x400?text=No+Image"} alt={p.name} />
+              <h3 className="product-title">{p.name}</h3>
+              <p className="product-description">{p.description ? (p.description.length > 140 ? p.description.slice(0, 140) + "…" : p.description) : "New arrival."}</p>
+              <div className="product-price">₹{p.price}</div>
+              <button onClick={(e) => handleAdd(p, e)}>
+                {adding[p.id] ? "Added ✓" : "Add to Cart"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </main>
+    </>
   );
 }

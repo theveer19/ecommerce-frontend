@@ -1,114 +1,148 @@
-// ✅ App.js
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Auth from './components/Auth';
-import Navbar from './components/Navbar';
-import ProductForm from './components/ProductForm';
-import ProductList from './components/ProductList';
-import CartPage from './pages/CartPage';
-import OrderHistory from './pages/OrderHistory';
-import { supabase } from './supabase/supabaseClient';
-import { CartProvider } from './context/CartContext';
-import AdminPage from './pages/AdminPage';
-import AdminOrders from './pages/AdminOrders';
-import ManageProducts from './pages/ManageProducts';
-import ManageUsers from './pages/ManageUsers';
-import CheckoutPage from './pages/CheckoutPage';
-import ThankYouPage from './pages/ThankYouPage';
-import ProductDetailsPage from './pages/ProductDetailsPage'; 
-import Footer from './components/Footer';  // ✅ NEW FOOTER IMPORT
+import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+import Auth from "./components/Auth";
+import Navbar from "./components/Navbar";
+import ProductForm from "./components/ProductForm";
+import ProductList from "./components/ProductList";
+import CartPage from "./pages/CartPage";
+import OrderHistoryPage from "./pages/OrderHistory";
+import { supabase } from "./supabase/supabaseClient";
+import { CartProvider } from "./context/CartContext";
+import AdminPage from "./pages/AdminPage";
+import AdminOrders from "./pages/AdminOrders";
+import ManageProducts from "./pages/ManageProducts";
+import ManageUsers from "./pages/ManageUsers";
+import CheckoutPage from "./pages/CheckoutPage";
+import ThankYouPage from "./pages/ThankYouPage";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
+import Footer from "./components/Footer";
+import DealsPage from "./pages/DealsPage";
+import CategoriesPage from "./pages/CategoriesPage";
+import AboutUsPage from "./pages/AboutUsPage";
 
 function App() {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
-  // ✅ Check user session & fetch role
+  // Fetch user role from 'users' table (uses maybeSingle())
+  async function fetchUserRole(userId) {
+    try {
+      if (!userId) {
+        setUserRole(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching role:", error);
+        setUserRole(null);
+        return;
+      }
+      setUserRole(data?.role ?? null);
+    } catch (err) {
+      console.error("Error fetching role:", err);
+      setUserRole(null);
+    }
+  }
+
   useEffect(() => {
+    // get initial session + role
     const getSessionAndRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (session?.user) fetchUserRole(session.user.id);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const currentSession = data?.session ?? null;
+        setSession(currentSession);
+        if (currentSession?.user?.id) {
+          await fetchUserRole(currentSession.user.id);
+        }
+      } catch (err) {
+        console.error("Error getting session:", err);
+      }
     };
 
     getSessionAndRole();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) fetchUserRole(session.user.id);
+    // subscribe to auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession?.user?.id) fetchUserRole(newSession.user.id);
+      else setUserRole(null);
     });
 
+    // cleanup subscription on unmount
     return () => {
-      listener?.subscription?.unsubscribe?.();
+      if (listener?.subscription?.unsubscribe) {
+        listener.subscription.unsubscribe();
+      } else if (typeof listener?.unsubscribe === "function") {
+        listener.unsubscribe();
+      }
     };
   }, []);
 
-  // ✅ Fetch user role
-  const fetchUserRole = async (userId) => {
-  try {
-    if (!userId) {
+  const handleLogin = (newSession) => {
+    setSession(newSession);
+    if (newSession?.user?.id) {
+      fetchUserRole(newSession.user.id);
+    } else {
       setUserRole(null);
-      return;
     }
+  };
 
-    // Use maybeSingle() to avoid 406 when no row exists
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching role:', error);
-      setUserRole(null);
-      return;
-    }
-
-    setUserRole(data?.role ?? null);
-  } catch (err) {
-    console.error('Error fetching role:', err);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
     setUserRole(null);
-  }
-};
-  const handleLogin = (session) => {
-    setSession(session);
-    if (session?.user) fetchUserRole(session.user.id);
   };
 
   return (
     <CartProvider>
       <Router>
-        <Navbar userRole={userRole} />
+        <Navbar userRole={userRole} session={session} onLogout={handleLogout} />
 
         <Routes>
+          {/* Root: show Auth if not logged in, otherwise go to products */}
           <Route
             path="/"
-            element={session ? <Navigate to="/products" /> : <Auth onLogin={handleLogin} />}
+            element={session ? <Navigate to="/products" replace /> : <Auth onLogin={handleLogin} />}
           />
+
+          {/* PRODUCTS: public listing (anyone can view) */}
           <Route
             path="/products"
             element={
-              session ? (
-                <>
-                  {userRole === 'admin' && <ProductForm />}
-                  <ProductList />
-                </>
-              ) : (
-                <Navigate to="/" />
-              )
+              <>
+                {/* Admin can see ProductForm above the listing */}
+                {userRole === "admin" && <ProductForm />}
+                <ProductList />
+              </>
             }
           />
 
-          {/* ✅ Product Details Page */}
+          {/* New Routes */}
+          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+
+          {/* Product details (public) */}
           <Route path="/product/:id" element={<ProductDetailsPage />} />
 
-          {/* ✅ Cart, Orders, Checkout */}
-          <Route path="/cart" element={session ? <CartPage /> : <Navigate to="/" />} />
-          <Route path="/orders" element={session ? <OrderHistory /> : <Navigate to="/" />} />
-          <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/" />} />
+          {/* Protected routes (require login) */}
+          <Route path="/cart" element={session ? <CartPage /> : <Navigate to="/" replace />} />
+          <Route path="/orders" element={session ? <OrderHistoryPage /> : <Navigate to="/" replace />} />
+          <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/" replace />} />
+
+          {/* Thank you page can be public (displays order details passed in state) */}
           <Route path="/thank-you" element={<ThankYouPage />} />
 
-          {/* ✅ Admin-only routes */}
-          {userRole === 'admin' && (
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
+
+          {/* Admin-only routes — only register them if userRole === 'admin' */}
+          {userRole === "admin" && (
             <>
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
@@ -116,9 +150,11 @@ function App() {
               <Route path="/admin/users" element={<ManageUsers />} />
             </>
           )}
+
+          {/* Fallback: redirect unknown routes to /products */}
+          <Route path="*" element={<Navigate to="/products" replace />} />
         </Routes>
 
-        {/* ✅ Footer will show on all pages */}
         <Footer />
       </Router>
     </CartProvider>

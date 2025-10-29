@@ -1,4 +1,3 @@
-// src/context/CartContext.js
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const CartContext = createContext();
@@ -51,6 +50,11 @@ export function CartProvider({ children }) {
     return cartItems.reduce((sum, it) => sum + Number(it.price || 0) * (it.quantity || 1), 0);
   };
 
+  // ✅ ADD THIS MISSING FUNCTION
+  const getCartCount = () => {
+    return cartItems.reduce((count, item) => count + (item.quantity || 1), 0);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -60,6 +64,7 @@ export function CartProvider({ children }) {
         updateQuantity,
         clearCart,
         getCartTotal,
+        getCartCount, // ✅ ADD THIS
       }}
     >
       {children}

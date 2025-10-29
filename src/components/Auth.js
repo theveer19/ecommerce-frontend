@@ -13,7 +13,7 @@ import {
 import GitHubIcon from "@mui/icons-material/GitHub";
 import GoogleIcon from "@mui/icons-material/Google";
 import { motion } from "framer-motion";
-import confetti from "canvas-confetti"; // 🎉 install with `npm install canvas-confetti`
+import confetti from "canvas-confetti";
 
 export default function Auth({ onLogin }) {
   const [tab, setTab] = useState(0);
@@ -71,6 +71,27 @@ export default function Auth({ onLogin }) {
   const triggerShake = () => {
     setShake(true);
     setTimeout(() => setShake(false), 600);
+  };
+
+  // ✅ Fixed OAuth Handlers
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+    if (error) {
+      console.error("Google OAuth error:", error);
+      setMessage("❌ Google login failed");
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+    });
+    if (error) {
+      console.error("GitHub OAuth error:", error);
+      setMessage("❌ GitHub login failed");
+    }
   };
 
   return (
@@ -176,48 +197,33 @@ export default function Auth({ onLogin }) {
           </Button>
         )}
 
-        {/* ✅ Social Logins */}
+        {/* ✅ Social Logins - FIXED VERSION */}
         <Typography variant="body2" sx={{ mt: 2 }}>
           Or continue with:
         </Typography>
         <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
           <Button
-  variant="outlined"
-  startIcon={<GoogleIcon />}
-  fullWidth
-  onClick={() =>
-    supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin, // Optional: ensure return to your site
-      },
-    })
-  }
->
-  Google
-</Button>
+            variant="outlined"
+            startIcon={<GoogleIcon />}
+            fullWidth
+            onClick={handleGoogleLogin}
+          >
+            Google
+          </Button>
 
-<Button
-  variant="outlined"
-  startIcon={<GitHubIcon />}
-  fullWidth
-  onClick={() =>
-    supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    })
-  }
->
-  GitHub
-</Button>
-
+          <Button
+            variant="outlined"
+            startIcon={<GitHubIcon />}
+            fullWidth
+            onClick={handleGitHubLogin}
+          >
+            GitHub
+          </Button>
         </Box>
 
         {/* ✅ Message */}
         {message && (
-          <Typography sx={{ mt: 2, color: message.includes("✅") ? "lime" : "red" }}>
+          <Typography sx={{ mt: 2, color: message.includes("✅") ? "green" : "red" }}>
             {message}
           </Typography>
         )}

@@ -34,8 +34,11 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
 
-    @keyframes gradientAnimation {
+/* 🌈 Gradient animation */
+@keyframes gradientAnimation {
   0% {
     background-position: 0% 50%;
   }
@@ -47,7 +50,6 @@
   }
 }
 
-/* 🌈 Gradient animation */
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -59,6 +61,7 @@
   animation: fadeIn 1.2s ease forwards;
   opacity: 0;
 }
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -71,9 +74,3 @@
   text-shadow: 0 0 12px #FFD700;
   transition: all 0.3s ease;
 }
-
-
-  }
-  
-}
-

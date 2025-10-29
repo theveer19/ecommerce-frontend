@@ -1,4 +1,3 @@
-// src/pages/CheckoutPage.js
 import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -13,6 +12,18 @@ export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ✅ ADDED: Authentication check and redirect
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+        return;
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   // Expecting ProductDetailsPage to send { buyNowItem: {...} }
   const buyNowItem = location.state?.buyNowItem ?? null;
 
@@ -21,14 +32,16 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [totalAmount, setTotalAmount] = useState(0);
+  const [session, setSession] = useState(null);
 
   // populate email if logged in
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
+          data: { user, session },
+        } = await supabase.auth.getSession();
+        setSession(session);
         if (user) setEmail(user.email || "");
       } catch (err) {
         console.warn("Could not fetch supabase user:", err);
@@ -89,7 +102,7 @@ export default function CheckoutPage() {
         // Only clear the cart when the order was placed from the cart (not buyNow)
         if (!buyNowItem) clearCart();
         // Navigate to thank-you with order details (if backend returns them)
-        navigate("/thank-you", { state: { orderDetails: result.order || { id: result.orderId, total_amount: totalAmount, items: itemsToSave } } });
+        navigate("/thank-you", { state: { orderDetails: result.order || { id: result.orderId, total_amount: totalAmount, items: itemsToSave, address, phone, payment_method: paymentMethod } } });
       } else {
         setMessage("❌ Order save failed");
       }
@@ -101,6 +114,12 @@ export default function CheckoutPage() {
 
   // Handler: Razorpay
   const handleRazorpay = async () => {
+    if (!session) {
+      setMessage("❌ Please sign in to complete your purchase");
+      navigate("/");
+      return;
+    }
+
     if (!address || !phone) {
       setMessage("❌ Please fill all fields");
       return;
@@ -153,6 +172,12 @@ export default function CheckoutPage() {
 
   // Handler: Cash on Delivery
   const handleCOD = async () => {
+    if (!session) {
+      setMessage("❌ Please sign in to complete your purchase");
+      navigate("/");
+      return;
+    }
+
     if (!address || !phone) {
       setMessage("❌ Please fill all fields");
       return;
@@ -165,50 +190,67 @@ export default function CheckoutPage() {
   return (
     <div style={checkoutStyle}>
       <h2>🛒 Checkout</h2>
-      <label>Email:</label>
-      <input type="email" value={email} readOnly style={inputStyle} />
+      
+      {!session ? (
+        <div style={authWarningStyle}>
+          <p>🔐 Please sign in to complete your purchase</p>
+          <button 
+            onClick={() => navigate("/")}
+            style={signInButtonStyle}
+          >
+            Sign In Now
+          </button>
+        </div>
+      ) : (
+        <>
+          <label>Email:</label>
+          <input type="email" value={email} readOnly style={inputStyle} />
 
-      <label>Address:</label>
-      <textarea
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        style={inputStyle}
-      />
+          <label>Address:</label>
+          <textarea
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            style={inputStyle}
+            placeholder="Enter your complete delivery address"
+          />
 
-      <label>Phone:</label>
-      <input
-        type="text"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        style={inputStyle}
-      />
+          <label>Phone:</label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            style={inputStyle}
+            placeholder="Enter your phone number"
+          />
 
-      <h3>Order Summary:</h3>
-      {itemsToShow.map((item) => (
-        <p key={`${item.id}-${item.quantity ?? 1}`}>
-          {item.name} × {item.quantity || 1} — ₹
-          {(Number(item.price) * (item.quantity || 1)).toFixed(2)}
-        </p>
-      ))}
+          <h3>Order Summary:</h3>
+          {itemsToShow.map((item) => (
+            <p key={`${item.id}-${item.quantity ?? 1}`}>
+              {item.name} × {item.quantity || 1} — ₹
+              {(Number(item.price) * (item.quantity || 1)).toFixed(2)}
+            </p>
+          ))}
 
-      <h3>Total: ₹{totalAmount.toFixed(2)}</h3>
+          <h3>Total: ₹{totalAmount.toFixed(2)}</h3>
 
-      <button onClick={handleRazorpay} style={btnStyle}>
-        💳 Pay with Razorpay
-      </button>
-      <button
-        onClick={handleCOD}
-        style={{ ...btnStyle, backgroundColor: "#555", marginTop: "10px" }}
-      >
-        📦 Cash on Delivery
-      </button>
+          <button onClick={handleRazorpay} style={btnStyle}>
+            💳 Pay with Razorpay
+          </button>
+          <button
+            onClick={handleCOD}
+            style={{ ...btnStyle, backgroundColor: "#555", marginTop: "10px" }}
+          >
+            📦 Cash on Delivery
+          </button>
 
-      {message && <p style={{ color: "red", marginTop: 12 }}>{message}</p>}
+          {message && <p style={{ color: "red", marginTop: 12 }}>{message}</p>}
+        </>
+      )}
     </div>
   );
 }
 
-/* Simple inline styles (you can keep your existing ones) */
+/* Simple inline styles */
 const checkoutStyle = {
   padding: "2rem",
   maxWidth: "500px",
@@ -216,6 +258,7 @@ const checkoutStyle = {
   background: "#fff",
   borderRadius: "10px",
   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  minHeight: "400px",
 };
 
 const inputStyle = {
@@ -235,4 +278,21 @@ const btnStyle = {
   fontSize: "16px",
   borderRadius: "8px",
   cursor: "pointer",
+};
+
+const authWarningStyle = {
+  textAlign: 'center',
+  padding: '40px 20px',
+  color: '#666',
+};
+
+const signInButtonStyle = {
+  backgroundColor: "#22c55e",
+  color: "white",
+  border: "none",
+  padding: "12px 24px",
+  fontSize: "16px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  marginTop: '20px',
 };
