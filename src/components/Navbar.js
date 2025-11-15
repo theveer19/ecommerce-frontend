@@ -1,13 +1,17 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FaGem, FaShoppingCart } from "react-icons/fa";
+import { Favorite } from "@mui/icons-material";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Navbar({ userRole, session, onLogout }) {
   const navigate = useNavigate();
   const { cartItems, getCartCount } = useCart();
+  const { getWishlistCount } = useWishlist();
   
-  const count = getCartCount ? getCartCount() : cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
+  const cartCount = getCartCount ? getCartCount() : cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
+  const wishlistCount = getWishlistCount ? getWishlistCount() : 0;
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -76,6 +80,22 @@ export default function Navbar({ userRole, session, onLogout }) {
 
         {/* Navigation Actions */}
         <div className="nav-actions" style={navActionsStyle}>
+          {/* Wishlist Icon */}
+          <div 
+            className="wishlist-icon" 
+            onClick={() => handleNavigation("/wishlist")} 
+            role="button" 
+            aria-label="Open wishlist"
+            style={wishlistIconStyle}
+          >
+            <Favorite />
+            {wishlistCount > 0 && (
+              <span className="wishlist-count" aria-hidden="true" style={wishlistCountStyle}>
+                {wishlistCount > 99 ? '99+' : wishlistCount}
+              </span>
+            )}
+          </div>
+
           {/* Cart Icon */}
           <div 
             className="cart-icon" 
@@ -85,9 +105,9 @@ export default function Navbar({ userRole, session, onLogout }) {
             style={cartIconStyle}
           >
             <FaShoppingCart />
-            {count > 0 && (
+            {cartCount > 0 && (
               <span className="cart-count" aria-hidden="true" style={cartCountStyle}>
-                {count > 99 ? '99+' : count}
+                {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
           </div>
@@ -174,8 +194,38 @@ const navButtonStyle = {
 
 const navActionsStyle = {
   display: 'flex',
-  gap: '20px',
+  gap: '15px',
   alignItems: 'center',
+};
+
+const wishlistIconStyle = {
+  position: 'relative',
+  fontSize: '1.5rem',
+  cursor: 'pointer',
+  color: '#fff',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '8px',
+  borderRadius: '8px',
+  transition: 'background-color 0.3s ease',
+};
+
+const wishlistCountStyle = {
+  position: 'absolute',
+  top: '-8px',
+  right: '-8px',
+  background: 'linear-gradient(45deg, #ef4444, #f59e0b)',
+  color: 'white',
+  minWidth: '20px',
+  height: '20px',
+  borderRadius: '50%',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: '0.7rem',
+  fontWeight: '700',
+  padding: '0 4px',
 };
 
 const cartIconStyle = {

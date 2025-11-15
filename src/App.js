@@ -6,9 +6,10 @@ import Navbar from "./components/Navbar";
 import ProductForm from "./components/ProductForm";
 import ProductList from "./components/ProductList";
 import CartPage from "./pages/CartPage";
-import OrderHistoryPage from "./pages/OrderHistory";
+import OrderHistoryPage from "./pages/OrderHistoryPage";
 import { supabase } from "./supabase/supabaseClient";
 import { CartProvider } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import AdminPage from "./pages/AdminPage";
 import AdminOrders from "./pages/AdminOrders";
 import ManageProducts from "./pages/ManageProducts";
@@ -20,6 +21,7 @@ import Footer from "./components/Footer";
 import DealsPage from "./pages/DealsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import AboutUsPage from "./pages/AboutUsPage";
+import WishlistPage from "./pages/WishlistPage";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -100,64 +102,65 @@ function App() {
   };
 
   return (
-    <CartProvider>
-      <Router>
-        <Navbar userRole={userRole} session={session} onLogout={handleLogout} />
+    <WishlistProvider>
+      <CartProvider>
+        <Router>
+          <Navbar userRole={userRole} session={session} onLogout={handleLogout} />
 
-        <Routes>
-          {/* Root: show Auth if not logged in, otherwise go to products */}
-          <Route
-            path="/"
-            element={session ? <Navigate to="/products" replace /> : <Auth onLogin={handleLogin} />}
-          />
+          <Routes>
+            {/* Root: show Auth if not logged in, otherwise go to products */}
+            <Route
+              path="/"
+              element={session ? <Navigate to="/products" replace /> : <Auth onLogin={handleLogin} />}
+            />
 
-          {/* PRODUCTS: public listing (anyone can view) */}
-          <Route
-            path="/products"
-            element={
+            {/* PRODUCTS: public listing (anyone can view) */}
+            <Route
+              path="/products"
+              element={
+                <>
+                  {/* Admin can see ProductForm above the listing */}
+                  {userRole === "admin" && <ProductForm />}
+                  <ProductList />
+                </>
+              }
+            />
+
+            {/* New Routes */}
+            <Route path="/deals" element={<DealsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/about" element={<AboutUsPage />} />
+            <Route path="/wishlist" element={session ? <WishlistPage /> : <Navigate to="/" replace />} />
+
+            {/* Product details (public) */}
+            <Route path="/product/:id" element={<ProductDetailsPage />} />
+
+            {/* Protected routes (require login) */}
+            <Route path="/cart" element={session ? <CartPage /> : <Navigate to="/" replace />} />
+            <Route path="/orders" element={session ? <OrderHistoryPage /> : <Navigate to="/" replace />} />
+            <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/" replace />} />
+
+            {/* Thank you page can be public (displays order details passed in state) */}
+            <Route path="/thank-you" element={<ThankYouPage />} />
+
+            {/* Admin-only routes — only register them if userRole === 'admin' */}
+            {userRole === "admin" && (
               <>
-                {/* Admin can see ProductForm above the listing */}
-                {userRole === "admin" && <ProductForm />}
-                <ProductList />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/products" element={<ManageProducts />} />
+                <Route path="/admin/users" element={<ManageUsers />} />
               </>
-            }
-          />
+            )}
 
-          {/* New Routes */}
-          <Route path="/deals" element={<DealsPage />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/about" element={<AboutUsPage />} />
+            {/* Fallback: redirect unknown routes to /products */}
+            <Route path="*" element={<Navigate to="/products" replace />} />
+          </Routes>
 
-          {/* Product details (public) */}
-          <Route path="/product/:id" element={<ProductDetailsPage />} />
-
-          {/* Protected routes (require login) */}
-          <Route path="/cart" element={session ? <CartPage /> : <Navigate to="/" replace />} />
-          <Route path="/orders" element={session ? <OrderHistoryPage /> : <Navigate to="/" replace />} />
-          <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/" replace />} />
-
-          {/* Thank you page can be public (displays order details passed in state) */}
-          <Route path="/thank-you" element={<ThankYouPage />} />
-
-          <Route path="/product/:id" element={<ProductDetailsPage />} />
-
-          {/* Admin-only routes — only register them if userRole === 'admin' */}
-          {userRole === "admin" && (
-            <>
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/admin/orders" element={<AdminOrders />} />
-              <Route path="/admin/products" element={<ManageProducts />} />
-              <Route path="/admin/users" element={<ManageUsers />} />
-            </>
-          )}
-
-          {/* Fallback: redirect unknown routes to /products */}
-          <Route path="*" element={<Navigate to="/products" replace />} />
-        </Routes>
-
-        <Footer />
-      </Router>
-    </CartProvider>
+          <Footer />
+        </Router>
+      </CartProvider>
+    </WishlistProvider>
   );
 }
 

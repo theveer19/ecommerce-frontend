@@ -5,31 +5,31 @@ export default function AboutUsPage() {
     <div style={pageStyle}>
       <div style={containerStyle}>
         <div style={headerStyle}>
-          <h1 style={titleStyle}>About LUXE</h1>
+          <h1 style={titleStyle}>About OneT</h1>
           <p style={subtitleStyle}>Redefining Fashion, One Style at a Time</p>
         </div>
 
         <div style={contentGridStyle}>
           <div style={cardStyle}>
-            <h2 style={cardTitleStyle}>🎯 Our Mission</h2>
+            <h2 style={cardTitleStyle}> Our Mission</h2>
             <p style={cardTextStyle}>
-              At LUXE, we believe that fashion is more than just clothing—it's a form of self-expression. 
+              At OneT, we believe that fashion is more than just clothing—it's a form of self-expression. 
               Our mission is to provide high-quality, stylish products that empower individuals to express 
               their unique personality and confidence.
             </p>
           </div>
 
           <div style={cardStyle}>
-            <h2 style={cardTitleStyle}>⭐ Our Story</h2>
+            <h2 style={cardTitleStyle}> Our Story</h2>
             <p style={cardTextStyle}>
-              Founded in 2020, LUXE started as a small boutique with a big vision. Today, we've grown into 
+              Founded in 2025, OneT started as a small boutique with a big vision. Today, we've grown into 
               a premier fashion destination, offering curated collections that blend contemporary trends 
               with timeless elegance.
             </p>
           </div>
 
           <div style={cardStyle}>
-            <h2 style={cardTitleStyle}>💎 Our Values</h2>
+            <h2 style={cardTitleStyle}> Our Values</h2>
             <ul style={listStyle}>
               <li>Quality craftsmanship in every product</li>
               <li>Sustainable and ethical sourcing</li>
@@ -39,7 +39,7 @@ export default function AboutUsPage() {
           </div>
 
           <div style={cardStyle}>
-            <h2 style={cardTitleStyle}>🚀 What We Offer</h2>
+            <h2 style={cardTitleStyle}> What We Offer</h2>
             <ul style={listStyle}>
               <li>Premium fashion collections for men and women</li>
               <li>Exclusive deals and seasonal offers</li>
@@ -55,22 +55,22 @@ export default function AboutUsPage() {
           <div style={teamGridStyle}>
             <div style={teamMemberStyle}>
               <div style={avatarStyle}>👨‍💼</div>
-              <h3 style={memberNameStyle}>Alex Johnson</h3>
+              <h3 style={memberNameStyle}>Veer Gurjar &  Aman Shivhare</h3>
               <p style={memberRoleStyle}>CEO & Founder</p>
             </div>
             <div style={teamMemberStyle}>
               <div style={avatarStyle}>👩‍🎨</div>
-              <h3 style={memberNameStyle}>Sarah Miller</h3>
+              <h3 style={memberNameStyle}>Aman Shivhare</h3>
               <p style={memberRoleStyle}>Creative Director</p>
             </div>
             <div style={teamMemberStyle}>
               <div style={avatarStyle}>👨‍💻</div>
-              <h3 style={memberNameStyle}>Mike Chen</h3>
+              <h3 style={memberNameStyle}>Veer Gurjar</h3>
               <p style={memberRoleStyle}>Tech Lead</p>
             </div>
             <div style={teamMemberStyle}>
               <div style={avatarStyle}>👩‍💼</div>
-              <h3 style={memberNameStyle}>Emily Davis</h3>
+              <h3 style={memberNameStyle}>Aman Shivhare</h3>
               <p style={memberRoleStyle}>Customer Success</p>
             </div>
           </div>
