@@ -130,6 +130,149 @@ export default function CheckoutPage() {
     setShippingInfo(prev => ({ ...prev, [field]: value }));
   };
 
+  // Fallback function using backend for order saving
+  const saveOrderViaBackend = async (paymentMethod, paymentId = "") => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const itemsToSave = buyNowItem ? [buyNowItem] : cartItems;
+      
+      const orderData = {
+        user_id: user?.id,
+        items: itemsToSave,
+        total_amount: totalAmount,
+        subtotal: subtotal,
+        shipping_fee: shippingFee,
+        tax: tax,
+        shipping_info: shippingInfo,
+        payment_method: paymentMethod,
+        payment_id: paymentId,
+        status: 'confirmed'
+      };
+
+      console.log('Saving order via backend:', orderData);
+
+      const response = await fetch(`${BACKEND_URL}/save-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Backend order failed');
+      }
+      
+      console.log('Backend order save successful:', result);
+      return result.order;
+    } catch (err) {
+      console.error('Backend order save failed:', err);
+      throw err;
+    }
+  };
+
+  // Save order to Supabase directly (for COD)
+  const saveOrderToSupabase = async (paymentMethod, paymentId = "") => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const itemsToSave = buyNowItem ? [buyNowItem] : cartItems;
+
+      // Prepare minimal order data to avoid column errors
+      const orderData = {
+        user_id: user.id,
+        items: itemsToSave,
+        total_amount: totalAmount,
+        payment_method: paymentMethod,
+        status: 'confirmed',
+      };
+
+      // Only add optional fields if they exist in the table
+      if (shippingInfo) orderData.shipping_info = shippingInfo;
+      if (paymentId) orderData.payment_id = paymentId;
+
+      console.log('Saving order to Supabase:', orderData);
+
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([orderData])
+        .select();
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        
+        // If column error, try the backend endpoint
+        if (error.message.includes('column') && error.message.includes('does not exist')) {
+          console.log('Column missing, trying backend endpoint...');
+          return await saveOrderViaBackend(paymentMethod, paymentId);
+        }
+        
+        throw error;
+      }
+
+      return data?.[0];
+    } catch (err) {
+      console.error("Failed to save order to Supabase:", err);
+      throw err;
+    }
+  };
+
+  // Handle Cash on Delivery
+  const handleCODPayment = async () => {
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+    
+    try {
+      console.log('Starting COD payment process...');
+      
+      // Try direct Supabase first, then fallback to backend
+      let order;
+      try {
+        order = await saveOrderToSupabase("Cash on Delivery");
+      } catch (supabaseError) {
+        console.log('Supabase failed, trying backend...', supabaseError);
+        order = await saveOrderViaBackend("Cash on Delivery");
+      }
+      
+      if (order) {
+        console.log('COD order saved successfully:', order);
+        
+        // Only clear the cart when the order was placed from the cart (not buyNow)
+        if (!buyNowItem) {
+          clearCart();
+        }
+        
+        // Navigate to thank-you page with order details
+        navigate("/thank-you", { 
+          state: { 
+            orderDetails: {
+              id: order.id,
+              total_amount: totalAmount,
+              items: buyNowItem ? [buyNowItem] : cartItems,
+              shipping_info: shippingInfo,
+              payment_method: "Cash on Delivery",
+              status: 'confirmed'
+            } 
+          } 
+        });
+      } else {
+        throw new Error("Failed to create order");
+      }
+    } catch (err) {
+      console.error("COD payment error:", err);
+      setMessage({ 
+        type: 'error', 
+        text: `COD order failed: ${err.message || 'Please try again'}` 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load Razorpay script
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -142,60 +285,11 @@ export default function CheckoutPage() {
     });
   };
 
-  // Save order to backend
-  const saveOrder = async (paymentMethod, paymentId = "") => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const itemsToSave = buyNowItem ? [buyNowItem] : cartItems;
-
-      const res = await fetch(`${BACKEND_URL}/save-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user?.id || null,
-          items: itemsToSave,
-          total_amount: totalAmount,
-          subtotal: subtotal,
-          shipping_fee: shippingFee,
-          tax: tax,
-          shipping_info: shippingInfo,
-          payment_method: paymentMethod,
-          payment_id: paymentId,
-        }),
-      });
-
-      const result = await res.json();
-
-      if (result.success) {
-        // Only clear the cart when the order was placed from the cart (not buyNow)
-        if (!buyNowItem) clearCart();
-        // Navigate to thank-you with order details
-        navigate("/thank-you", { 
-          state: { 
-            orderDetails: result.order || { 
-              id: result.orderId, 
-              total_amount: totalAmount, 
-              items: itemsToSave, 
-              shipping_info: shippingInfo,
-              payment_method: paymentMethod 
-            } 
-          } 
-        });
-      } else {
-        setMessage({ type: 'error', text: 'Order save failed' });
-      }
-    } catch (err) {
-      console.error("Failed to save order:", err);
-      setMessage({ type: 'error', text: 'Order save failed' });
-    }
-  };
-
   // Handle Razorpay payment
   const handleRazorpayPayment = async () => {
     setLoading(true);
+    setMessage({ type: '', text: '' });
+    
     const sdkLoaded = await loadRazorpayScript();
     
     if (!sdkLoaded) {
@@ -212,7 +306,7 @@ export default function CheckoutPage() {
       });
 
       if (!orderRes.ok) {
-        throw new Error("Failed to create order");
+        throw new Error("Failed to create Razorpay order");
       }
 
       const order = await orderRes.json();
@@ -225,7 +319,36 @@ export default function CheckoutPage() {
         name: "LUXE Fashion",
         description: "Order Payment",
         handler: async function (response) {
-          await saveOrder("Razorpay", response.razorpay_payment_id);
+          try {
+            // Save order with payment ID
+            let savedOrder;
+            try {
+              savedOrder = await saveOrderToSupabase("Razorpay", response.razorpay_payment_id);
+            } catch (supabaseError) {
+              console.log('Supabase failed, trying backend...', supabaseError);
+              savedOrder = await saveOrderViaBackend("Razorpay", response.razorpay_payment_id);
+            }
+            
+            if (savedOrder) {
+              if (!buyNowItem) clearCart();
+              navigate("/thank-you", { 
+                state: { 
+                  orderDetails: {
+                    id: savedOrder.id,
+                    total_amount: totalAmount,
+                    items: buyNowItem ? [buyNowItem] : cartItems,
+                    shipping_info: shippingInfo,
+                    payment_method: "Razorpay",
+                    payment_id: response.razorpay_payment_id,
+                    status: 'confirmed'
+                  } 
+                } 
+              });
+            }
+          } catch (err) {
+            console.error("Error saving Razorpay order:", err);
+            setMessage({ type: 'error', text: 'Payment successful but order save failed' });
+          }
         },
         prefill: {
           name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
@@ -236,6 +359,7 @@ export default function CheckoutPage() {
         modal: {
           ondismiss: function() {
             setLoading(false);
+            setMessage({ type: 'info', text: 'Payment cancelled' });
           }
         }
       };
@@ -245,19 +369,6 @@ export default function CheckoutPage() {
     } catch (err) {
       console.error("Razorpay error:", err);
       setMessage({ type: 'error', text: 'Payment failed. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Cash on Delivery
-  const handleCODPayment = async () => {
-    setLoading(true);
-    try {
-      await saveOrder("Cash on Delivery");
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Order placement failed' });
-    } finally {
       setLoading(false);
     }
   };
@@ -552,7 +663,7 @@ export default function CheckoutPage() {
               {/* Message Alert */}
               {message.text && (
                 <Alert 
-                  severity={message.type === 'error' ? 'error' : 'success'} 
+                  severity={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'} 
                   sx={{ mt: 2 }}
                 >
                   {message.text}

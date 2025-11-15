@@ -76,6 +76,33 @@ export default function Navbar({ userRole, session, onLogout }) {
           >
             About
           </button>
+
+          {/* Admin Links - Only show for admin users */}
+          {userRole === "admin" && (
+            <>
+              <button 
+                onClick={() => handleNavigation("/admin")} 
+                aria-label="Admin Dashboard"
+                style={navButtonStyle}
+              >
+                Admin Dashboard
+              </button>
+              <button 
+                onClick={() => handleNavigation("/admin/orders")} 
+                aria-label="Manage Orders"
+                style={navButtonStyle}
+              >
+                Manage Orders
+              </button>
+              <button 
+                onClick={() => handleNavigation("/admin/users")} 
+                aria-label="Manage Users"
+                style={navButtonStyle}
+              >
+                Manage Users
+              </button>
+            </>
+          )}
         </nav>
 
         {/* Navigation Actions */}

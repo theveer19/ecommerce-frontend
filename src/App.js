@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Auth from "./components/Auth";
@@ -27,13 +27,38 @@ function App() {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
 
+  // Add this function to create user in database if missing
+  const createUserInDatabase = useCallback(async (userId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('users')
+          .insert([
+            { 
+              id: userId, 
+              email: user.email, 
+              role: 'customer' 
+            }
+          ]);
+        
+        if (error && !error.message.includes('duplicate key')) {
+          console.error('Error creating user in database:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Error in createUserInDatabase:', err);
+    }
+  }, []);
+
   // Fetch user role from 'users' table (uses maybeSingle())
-  async function fetchUserRole(userId) {
+  const fetchUserRole = useCallback(async (userId) => {
     try {
       if (!userId) {
         setUserRole(null);
         return;
       }
+      
       const { data, error } = await supabase
         .from("users")
         .select("role")
@@ -42,15 +67,18 @@ function App() {
 
       if (error) {
         console.error("Error fetching role:", error);
-        setUserRole(null);
+        // If user doesn't exist in users table, create them
+        await createUserInDatabase(userId);
+        setUserRole('customer'); // Default role
         return;
       }
-      setUserRole(data?.role ?? null);
+      
+      setUserRole(data?.role || 'customer'); // Default to customer if null
     } catch (err) {
       console.error("Error fetching role:", err);
-      setUserRole(null);
+      setUserRole('customer');
     }
-  }
+  }, [createUserInDatabase]);
 
   useEffect(() => {
     // get initial session + role
@@ -84,22 +112,22 @@ function App() {
         listener.unsubscribe();
       }
     };
-  }, []);
+  }, [fetchUserRole]); // Added fetchUserRole to dependencies
 
-  const handleLogin = (newSession) => {
+  const handleLogin = useCallback((newSession) => {
     setSession(newSession);
     if (newSession?.user?.id) {
       fetchUserRole(newSession.user.id);
     } else {
       setUserRole(null);
     }
-  };
+  }, [fetchUserRole]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
     setUserRole(null);
-  };
+  }, []);
 
   return (
     <WishlistProvider>
