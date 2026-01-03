@@ -699,7 +699,7 @@ const razorpayOrder = orderData;
 
       // Step 2: Prepare payment options
       const options = {
-        key: RAZORPAY_TEST_KEY, // Your Razorpay test key
+        key: RAZORPAY_KEY, // Your Razorpay live key
         amount: razorpayOrder.amount,
         currency: "INR",
         order_id: razorpayOrder.id,
