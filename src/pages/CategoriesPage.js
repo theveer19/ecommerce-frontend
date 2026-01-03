@@ -2,10 +2,17 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 import { useCart } from "../context/CartContext";
+import { 
+  Box, Container, Grid, Typography, Button, 
+  CircularProgress, IconButton 
+} from "@mui/material";
+import { ShoppingBag, Eye, TrendingUp, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function CategoriesPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("male");
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
@@ -29,232 +36,401 @@ export default function CategoriesPage() {
 
   const categories = {
     male: {
-      name: "👨 Men's Fashion",
+      name: "Men's Collection",
+      description: "Elevate your style with our premium men's fashion",
       subcategories: {
-        "top-wear": { name: "👕 Top Wear", filter: "shirt" },
-        "bottom-wear": { name: "👖 Bottom Wear", filter: "pant" },
-        "sports": { name: "⚽ Sports", filter: "sports" }
+        "tshirts": { name: "T-Shirts", filter: "t-shirt", icon: "👕" },
+        "sweatshirts": { name: "Sweatshirts", filter: "sweatshirt", icon: "🧥" },
+        "hoodies": { name: "Hoodies", filter: "hoodie", icon: "🦺" },
+        "jackets": { name: "Jackets", filter: "jacket", icon: "🧥" },
+        "pants": { name: "Pants", filter: "pant", icon: "👖" },
+        "shorts": { name: "Shorts", filter: "short", icon: "🩳" }
       }
     },
     female: {
-      name: "👩 Women's Fashion",
+      name: "Women's Collection",
+      description: "Discover elegance and comfort in every piece",
       subcategories: {
-        "top-wear": { name: "👚 Top Wear", filter: "top" },
-        "bottom-wear": { name: "👗 Bottom Wear", filter: "dress" },
-        "sports": { name: "🤸 Sports", filter: "sports" }
+        "dresses": { name: "Dresses", filter: "dress", icon: "👗" },
+        "tops": { name: "Tops", filter: "top", icon: "👚" },
+        "hoodies": { name: "Hoodies", filter: "hoodie", icon: "🦺" },
+        "jackets": { name: "Jackets", filter: "jacket", icon: "🧥" },
+        "pants": { name: "Pants", filter: "pant", icon: "👖" },
+        "skirts": { name: "Skirts", filter: "skirt", icon: "👗" }
+      }
+    },
+    accessories: {
+      name: "Accessories",
+      description: "Complete your look with our premium accessories",
+      subcategories: {
+        "caps": { name: "Caps", filter: "cap", icon: "🧢" },
+        "bags": { name: "Bags", filter: "bag", icon: "👜" },
+        "jewelry": { name: "Jewelry", filter: "jewelry", icon: "💎" },
+        "watches": { name: "Watches", filter: "watch", icon: "⌚" }
       }
     }
   };
 
   const handleAddToCart = (product) => {
     addToCart({ ...product, quantity: 1 });
+    // You could add a toast notification here
   };
 
-  const handleViewDetails = (productId) => {
-    navigate(`/product/${productId}`);
+  const getProductsForSubcategory = (filter) => {
+    return products
+      .filter(product => 
+        product.name.toLowerCase().includes(filter.toLowerCase()) ||
+        product.description?.toLowerCase().includes(filter.toLowerCase()) ||
+        product.category?.toLowerCase().includes(filter.toLowerCase())
+      )
+      .slice(0, 4);
   };
 
   if (loading) {
     return (
-      <div style={pageStyle}>
-        <div style={containerStyle}>
-          <h1 style={titleStyle}>🛍️ Categories</h1>
-          <p>Loading categories...</p>
-        </div>
-      </div>
+      <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CircularProgress sx={{ color: 'black' }} />
+      </Box>
     );
   }
 
   return (
-    <div style={pageStyle}>
-      <div style={containerStyle}>
-        <h1 style={titleStyle}>🛍️ Categories</h1>
-        <p style={subtitleStyle}>Browse through our wide range of categories</p>
+    <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+      <Container maxWidth="xl" sx={{ py: 8, px: { xs: 2, md: 4 } }}>
         
-        {Object.entries(categories).map(([categoryKey, category]) => (
-          <div key={categoryKey} style={categorySectionStyle}>
-            <h2 style={categoryTitleStyle}>{category.name}</h2>
-            
-            <div style={subcategoriesGridStyle}>
-              {Object.entries(category.subcategories).map(([subKey, subcategory]) => (
-                <div key={subKey} style={subcategoryCardStyle}>
-                  <h3 style={subcategoryTitleStyle}>{subcategory.name}</h3>
-                  <div style={productsGridStyle}>
-                    {products
-                      .filter(product => 
-                        product.name.toLowerCase().includes(subcategory.filter.toLowerCase()) ||
-                        product.description?.toLowerCase().includes(subcategory.filter.toLowerCase())
-                      )
-                      .slice(0, 3)
-                      .map(product => (
-                        <div key={product.id} style={productCardStyle}>
-                          <img 
-                            src={product.image_url || "https://via.placeholder.com/150x150?text=No+Image"} 
-                            alt={product.name}
-                            style={productImageStyle}
-                          />
-                          <div style={productContentStyle}>
-                            <h4 style={productNameStyle}>{product.name}</h4>
-                            <p style={productPriceStyle}>₹{product.price}</p>
-                            <div style={productButtonContainerStyle}>
-                              <button 
-                                onClick={() => handleAddToCart(product)}
-                                style={smallButtonStyle}
+        {/* Header */}
+        <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Typography 
+            sx={{ 
+              fontSize: { xs: '36px', md: '56px' },
+              fontWeight: 900,
+              letterSpacing: '-1px',
+              color: '#000',
+              mb: 2,
+              textTransform: 'uppercase'
+            }}
+          >
+            Discover Collections
+          </Typography>
+          <Typography 
+            sx={{ 
+              fontSize: '16px',
+              color: '#666',
+              maxWidth: '600px',
+              mx: 'auto',
+              lineHeight: 1.6
+            }}
+          >
+            Explore our curated categories and find your perfect style
+          </Typography>
+        </Box>
+
+        {/* Category Tabs */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: 2, 
+          mb: 6,
+          flexWrap: 'wrap' 
+        }}>
+          {Object.entries(categories).map(([key, category]) => (
+            <Button
+              key={key}
+              variant={activeCategory === key ? "contained" : "outlined"}
+              onClick={() => setActiveCategory(key)}
+              sx={{
+                borderRadius: 0,
+                textTransform: 'uppercase',
+                fontWeight: 700,
+                letterSpacing: '1px',
+                fontSize: '12px',
+                px: 4,
+                py: 1.5,
+                minWidth: 'auto'
+              }}
+            >
+              {category.name}
+            </Button>
+          ))}
+        </Box>
+
+        {/* Active Category Content */}
+        <Box sx={{ mb: 8 }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <Typography 
+              sx={{ 
+                fontSize: '32px',
+                fontWeight: 800,
+                color: '#000',
+                mb: 1,
+                textTransform: 'uppercase'
+              }}
+            >
+              {categories[activeCategory].name}
+            </Typography>
+            <Typography 
+              sx={{ 
+                fontSize: '14px',
+                color: '#666',
+                maxWidth: '500px',
+                mx: 'auto'
+              }}
+            >
+              {categories[activeCategory].description}
+            </Typography>
+          </Box>
+
+          {/* Subcategories Grid */}
+          <Grid container spacing={3}>
+            {Object.entries(categories[activeCategory].subcategories).map(([subKey, subcategory]) => {
+              const subcategoryProducts = getProductsForSubcategory(subcategory.filter);
+              
+              return (
+                <Grid item key={subKey} xs={12} md={6} lg={4}>
+                  <Box sx={{ 
+                    border: '1px solid #eee',
+                    p: 3,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    {/* Subcategory Header */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      mb: 3,
+                      pb: 2,
+                      borderBottom: '1px solid #eee'
+                    }}>
+                      <Typography 
+                        sx={{ 
+                          fontSize: '24px',
+                          mr: 2
+                        }}
+                      >
+                        {subcategory.icon}
+                      </Typography>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography 
+                          sx={{ 
+                            fontSize: '18px',
+                            fontWeight: 700,
+                            color: '#000',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {subcategory.name}
+                        </Typography>
+                        {subcategoryProducts.length > 0 && (
+                          <Typography 
+                            sx={{ 
+                              fontSize: '12px',
+                              color: '#666',
+                              fontWeight: 600
+                            }}
+                          >
+                            {subcategoryProducts.length} items
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* Products Preview */}
+                    {subcategoryProducts.length > 0 ? (
+                      <>
+                        <Grid container spacing={2} sx={{ mb: 3, flex: 1 }}>
+                          {subcategoryProducts.map(product => (
+                            <Grid item xs={6} key={product.id}>
+                              <Box sx={{ 
+                                border: '1px solid #f0f0f0',
+                                p: 1,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  borderColor: '#000'
+                                }
+                              }}
+                              onClick={() => navigate(`/product/${product.id}`)}
                               >
-                                Add to Cart
-                              </button>
-                              <button 
-                                onClick={() => handleViewDetails(product.id)}
-                                style={{...smallButtonStyle, background: 'rgba(34, 197, 94, 0.8)'}}
-                              >
-                                View
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    }
-                    {products.filter(product => 
-                      product.name.toLowerCase().includes(subcategory.filter.toLowerCase()) ||
-                      product.description?.toLowerCase().includes(subcategory.filter.toLowerCase())
-                    ).length === 0 && (
-                      <p style={noProductsStyle}>No products found in this category</p>
+                                <Box sx={{ 
+                                  height: '120px',
+                                  bgcolor: '#fafafa',
+                                  mb: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  overflow: 'hidden'
+                                }}>
+                                  <img 
+                                    src={product.image_url || "/api/placeholder/80/80"} 
+                                    alt={product.name}
+                                    style={{ 
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover'
+                                    }}
+                                  />
+                                </Box>
+                                <Typography 
+                                  sx={{ 
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    color: '#000',
+                                    mb: 0.5,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                  }}
+                                >
+                                  {product.name}
+                                </Typography>
+                                <Typography 
+                                  sx={{ 
+                                    fontSize: '14px',
+                                    fontWeight: 700,
+                                    color: '#000'
+                                  }}
+                                >
+                                  ₹{product.price.toLocaleString()}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          ))}
+                        </Grid>
+
+                        {subcategoryProducts.length >= 4 && (
+                          <Button
+                            variant="outlined"
+                            fullWidth
+                            sx={{
+                              borderRadius: 0,
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              fontSize: '11px',
+                              letterSpacing: '1px',
+                              py: 1.5
+                            }}
+                            onClick={() => navigate(`/products?cat=${subcategory.filter}`)}
+                          >
+                            View All {subcategory.name}
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center'
+                      }}>
+                        <Typography sx={{ color: '#999', mb: 2 }}>
+                          No products available
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          sx={{
+                            borderRadius: 0,
+                            textTransform: 'uppercase',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            letterSpacing: '1px'
+                          }}
+                          onClick={() => navigate('/products')}
+                        >
+                          Browse All Products
+                        </Button>
+                      </Box>
                     )}
-                  </div>
-                </div>
+                  </Box>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+
+        {/* Featured Products */}
+        <Box sx={{ 
+          borderTop: '1px solid #eee',
+          pt: 8,
+          mt: 8
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+            <Sparkles size={24} style={{ marginRight: '12px' }} />
+            <Typography 
+              sx={{ 
+                fontSize: '24px',
+                fontWeight: 800,
+                color: '#000',
+                textTransform: 'uppercase'
+              }}
+            >
+              Featured Products
+            </Typography>
+          </Box>
+          
+          <Grid container spacing={3}>
+            {products
+              .filter(p => p.featured)
+              .slice(0, 4)
+              .map(product => (
+                <Grid item xs={6} md={3} key={product.id}>
+                  <Box 
+                    sx={{ 
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-4px)'
+                      }
+                    }}
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    <Box sx={{ 
+                      height: '200px',
+                      bgcolor: '#fafafa',
+                      mb: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden'
+                    }}>
+                      <img 
+                        src={product.image_url || "/api/placeholder/200/200"} 
+                        alt={product.name}
+                        style={{ 
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    </Box>
+                    <Typography 
+                      sx={{ 
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#000',
+                        mb: 0.5,
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {product.name}
+                    </Typography>
+                    <Typography 
+                      sx={{ 
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: '#000'
+                      }}
+                    >
+                      ₹{product.price.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Grid>
               ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+          </Grid>
+        </Box>
+      </Container>
+    </Box>
   );
 }
-
-const pageStyle = {
-  minHeight: '100vh',
-  background: 'linear-gradient(160deg, #0a0f1f 0%, #1a273a 50%, #0a192f 100%)',
-  padding: '20px 0',
-};
-
-const containerStyle = {
-  maxWidth: '1200px',
-  margin: '0 auto',
-  padding: '0 20px',
-};
-
-const titleStyle = {
-  fontSize: '3rem',
-  fontWeight: 'bold',
-  background: 'linear-gradient(45deg, #22c55e, #3b82f6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  textAlign: 'center',
-  marginBottom: '10px',
-};
-
-const subtitleStyle = {
-  fontSize: '1.2rem',
-  color: '#d1d5db',
-  textAlign: 'center',
-  marginBottom: '40px',
-};
-
-const categorySectionStyle = {
-  marginBottom: '50px',
-};
-
-const categoryTitleStyle = {
-  fontSize: '2rem',
-  color: '#fff',
-  marginBottom: '20px',
-  borderBottom: '2px solid #22c55e',
-  paddingBottom: '10px',
-};
-
-const subcategoriesGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-  gap: '20px',
-};
-
-const subcategoryCardStyle = {
-  background: 'rgba(17, 25, 40, 0.85)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: '16px',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
-  padding: '20px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-};
-
-const subcategoryTitleStyle = {
-  fontSize: '1.5rem',
-  color: '#fff',
-  marginBottom: '15px',
-};
-
-const productsGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-  gap: '15px',
-};
-
-const productCardStyle = {
-  background: 'rgba(30, 41, 59, 0.9)',
-  borderRadius: '12px',
-  padding: '10px',
-  textAlign: 'center',
-};
-
-const productImageStyle = {
-  width: '80px',
-  height: '80px',
-  objectFit: 'cover',
-  borderRadius: '8px',
-  marginBottom: '8px',
-};
-
-const productContentStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '5px',
-};
-
-const productNameStyle = {
-  fontSize: '0.8rem',
-  color: '#fff',
-  fontWeight: 'bold',
-  margin: 0,
-};
-
-const productPriceStyle = {
-  fontSize: '0.9rem',
-  color: '#22c55e',
-  fontWeight: 'bold',
-  margin: 0,
-};
-
-const productButtonContainerStyle = {
-  display: 'flex',
-  gap: '5px',
-  marginTop: '5px',
-};
-
-const smallButtonStyle = {
-  flex: 1,
-  background: 'rgba(37, 99, 235, 0.8)',
-  color: 'white',
-  border: 'none',
-  padding: '5px 8px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '0.7rem',
-  fontWeight: '600',
-};
-
-const noProductsStyle = {
-  color: '#9ca3af',
-  textAlign: 'center',
-  fontStyle: 'italic',
-  gridColumn: '1 / -1',
-};

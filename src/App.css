@@ -1,76 +1,55 @@
-.App {
-  text-align: center;
+/* index.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap');
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #FFFFFF;
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* THE BLUORNG MARQUEE ANIMATION */
+@keyframes scrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  background: #000; /* Black background */
+  padding: 12px 0;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.marquee-content {
+  display: inline-block;
+  animation: scrollLeft 20s linear infinite;
 }
 
-.App-link {
-  color: #61dafb;
+.marquee-text {
+  display: inline-block;
+  color: #FFF;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin-right: 50px;
 }
 
-@keyframes App-logo-spin {
+/* FADE IN ANIMATION FOR IMAGES */
+@keyframes fadeInUp {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(20px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* 🌈 Gradient animation */
-@keyframes gradientAnimation {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* 🎥 Fade-in effect */
 .fade-in {
-  animation: fadeIn 1.2s ease forwards;
-  opacity: 0;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* 🌟 Icon hover glow */
-.icon-hover:hover {
-  transform: scale(1.2) rotate(5deg);
-  color: #FFD700;
-  text-shadow: 0 0 12px #FFD700;
-  transition: all 0.3s ease;
+  animation: fadeInUp 0.8s ease-out forwards;
 }

@@ -1,180 +1,300 @@
 import React, { useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
-import { Box, Typography, Paper, Button, Divider } from "@mui/material";
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { Box, Typography, Paper, Button, Divider, Container } from "@mui/material";
+import { Check, ShoppingBag, ArrowRight, Package } from "lucide-react";
 
 export default function ThankYouPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const orderDetails = location.state?.orderDetails;
 
   useEffect(() => {
-    // 🎉 Trigger confetti once
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-    });
+    // 🖤 PREMIUM MONOCHROME CONFETTI
+    const duration = 3000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#000000', '#444444', '#aaaaaa', '#ffffff'] // Black/White/Silver
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#000000', '#444444', '#aaaaaa', '#ffffff']
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    frame();
   }, []);
 
+  // Redirect if no order details (optional protection)
+  useEffect(() => {
+    if (!orderDetails) {
+      // Uncomment below to force redirect if accessed directly
+      // navigate('/');
+    }
+  }, [orderDetails, navigate]);
+
   return (
-    <Box
-      sx={{
-        background: "linear-gradient(160deg, #0a0f1f 0%, #1a273a 50%, #0a192f 100%)",
-        minHeight: "100vh",
-        padding: "40px 20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Paper
-        sx={{
-          background: "rgba(17, 25, 40, 0.95)",
-          backdropFilter: "blur(10px)",
-          maxWidth: "600px",
-          width: "100%",
-          padding: "40px",
-          borderRadius: "20px",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-          textAlign: "center",
-          color: "white",
-        }}
-      >
-        <CheckCircleIcon 
-          sx={{ 
-            fontSize: 80, 
-            color: "#22c55e", 
-            mb: 2,
-            filter: 'drop-shadow(0 0 20px rgba(34, 197, 94, 0.5))'
-          }} 
-        />
+    <Box sx={styles.pageBackground}>
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes float { 0% { transform: translateY(0px) rotateX(0deg); } 50% { transform: translateY(-10px) rotateX(2deg); } 100% { transform: translateY(0px) rotateX(0deg); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .barcode {
+          height: 30px;
+          width: 100%;
+          background: repeating-linear-gradient(
+            to right,
+            #000 0px, #000 2px,
+            transparent 2px, transparent 4px,
+            #000 4px, #000 8px,
+            transparent 8px, transparent 9px
+          );
+        }
+      `}</style>
+
+      <Container maxWidth="md" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
-        <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2, color: "#22c55e" }}>
-          Order Confirmed!
+        {/* SUCCESS ICON */}
+        <Box sx={styles.successIconWrapper}>
+          <Check size={40} color="white" strokeWidth={3} />
+        </Box>
+
+        <Typography variant="h2" sx={styles.title}>
+          ORDER CONFIRMED
         </Typography>
         
-        <Typography variant="h6" sx={{ mb: 3, color: "#d1d5db" }}>
-          Thank you for your purchase. Your order has been successfully placed.
+        <Typography variant="body1" sx={styles.subtitle}>
+          Your order has been placed successfully. A confirmation email is on its way.
         </Typography>
 
-        {orderDetails ? (
-          <Box
-            sx={{
-              textAlign: "left",
-              backgroundColor: "rgba(255,255,255,0.05)",
-              padding: "25px",
-              borderRadius: "12px",
-              marginBottom: "30px",
-              border: "1px solid rgba(255,255,255,0.1)",
-            }}
-          >
-            <Typography variant="h5" sx={{ mb: 3, color: "white", textAlign: 'center' }}>
-              📦 Order Summary
-            </Typography>
+        {/* --- 3D RECEIPT CARD --- */}
+        <Box sx={styles.perspectiveWrapper}>
+          <Paper sx={styles.receiptCard}>
             
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: "#22c55e" }}>Order ID:</Typography>
-              <Typography sx={{ color: "white", fontWeight: 'bold' }}>#{orderDetails.id || 'N/A'}</Typography>
+            {/* Receipt Header */}
+            <Box sx={{ textAlign: 'center', mb: 3 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: '24px', letterSpacing: '-1px' }}>ONE-T</Typography>
+              <Typography sx={{ fontSize: '10px', color: '#666', letterSpacing: '2px', textTransform: 'uppercase' }}>Official Receipt</Typography>
             </Box>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: "#22c55e" }}>Total Amount:</Typography>
-              <Typography sx={{ color: "white", fontWeight: 'bold', fontSize: '1.2rem' }}>
-                ₹{orderDetails.total_amount?.toFixed(2) || '0.00'}
-              </Typography>
-            </Box>
+            <Divider sx={{ borderStyle: 'dashed', borderColor: '#ccc', mb: 3 }} />
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" sx={{ color: "#22c55e" }}>Payment Method:</Typography>
-              <Typography sx={{ color: "white" }}>
-                {orderDetails.payment_method === 'Razorpay' ? '💳 Credit/Debit Card' : '📦 Cash on Delivery'}
-              </Typography>
-            </Box>
+            {/* Order Info Grid */}
+            {orderDetails ? (
+              <>
+                <Box sx={styles.row}>
+                  <Typography sx={styles.label}>ORDER ID</Typography>
+                  <Typography sx={styles.value}>#{orderDetails.id || '29384-X'}</Typography>
+                </Box>
+                <Box sx={styles.row}>
+                  <Typography sx={styles.label}>DATE</Typography>
+                  <Typography sx={styles.value}>{new Date().toLocaleDateString()}</Typography>
+                </Box>
+                <Box sx={styles.row}>
+                  <Typography sx={styles.label}>PAYMENT</Typography>
+                  <Typography sx={styles.value}>{orderDetails.payment_method === 'Razorpay' ? 'CREDIT CARD' : 'COD'}</Typography>
+                </Box>
 
-            {orderDetails.shipping_info && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ color: "#22c55e" }}>Shipping Address:</Typography>
-                <Typography sx={{ color: "white" }}>
-                  {orderDetails.shipping_info.firstName} {orderDetails.shipping_info.lastName}
-                </Typography>
-                <Typography sx={{ color: "#d1d5db", fontSize: '0.9rem' }}>
-                  {orderDetails.shipping_info.address}, {orderDetails.shipping_info.city}
-                </Typography>
-                <Typography sx={{ color: "#d1d5db", fontSize: '0.9rem' }}>
-                  {orderDetails.shipping_info.phone}
-                </Typography>
-              </Box>
+                {orderDetails.shipping_info && (
+                  <Box sx={{ mt: 2, mb: 2, p: 2, bgcolor: '#f9f9f9', borderRadius: '8px' }}>
+                    <Typography sx={{ fontSize: '10px', fontWeight: 700, color: '#999', mb: 0.5 }}>SHIP TO</Typography>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 600 }}>{orderDetails.shipping_info.firstName} {orderDetails.shipping_info.lastName}</Typography>
+                    <Typography sx={{ fontSize: '12px', color: '#666' }}>
+                      {orderDetails.shipping_info.address}, {orderDetails.shipping_info.city}
+                    </Typography>
+                  </Box>
+                )}
+
+                <Divider sx={{ mb: 3 }} />
+
+                {/* Items List */}
+                <Box sx={{ mb: 3 }}>
+                  {orderDetails.items?.map((item, idx) => (
+                    <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography sx={{ fontSize: '13px', color: '#333' }}>
+                        {item.name} <span style={{ color: '#999' }}>x{item.quantity}</span>
+                      </Typography>
+                      <Typography sx={{ fontSize: '13px', fontWeight: 700 }}>
+                        ₹{(item.price * (item.quantity || 1)).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                <Divider sx={{ borderStyle: 'dashed', borderColor: '#000', mb: 2 }} />
+
+                {/* Total */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography sx={{ fontSize: '16px', fontWeight: 900 }}>TOTAL PAID</Typography>
+                  <Typography sx={{ fontSize: '24px', fontWeight: 900 }}>₹{orderDetails.total_amount?.toFixed(2)}</Typography>
+                </Box>
+              </>
+            ) : (
+              <Typography sx={{ textAlign: 'center', color: '#999', py: 4 }}>Order details loading...</Typography>
             )}
 
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 2 }} />
+            {/* Footer Barcode */}
+            <Box sx={{ mt: 4, textAlign: 'center', opacity: 0.7 }}>
+              <div className="barcode"></div>
+              <Typography sx={{ fontSize: '10px', mt: 1, letterSpacing: '4px' }}>THANK YOU</Typography>
+            </Box>
 
-            <Typography variant="subtitle2" sx={{ color: "#22c55e", mb: 1 }}>Items:</Typography>
-            {orderDetails.items?.map((item, idx) => (
-              <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ color: "white", fontSize: '0.9rem' }}>
-                  {item.name} × {item.quantity || 1}
-                </Typography>
-                <Typography sx={{ color: "#22c55e", fontSize: '0.9rem', fontWeight: 'bold' }}>
-                  ₹{(item.price * (item.quantity || 1)).toFixed(2)}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          <Typography sx={{ color: "#ef4444", mb: 3 }}>
-            ⚠️ No order details found.
-          </Typography>
-        )}
+          </Paper>
+        </Box>
 
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+        {/* Action Buttons */}
+        <Box sx={styles.actions}>
           <Button
             component={Link}
             to="/products"
-            variant="contained"
-            startIcon={<ShoppingCartIcon />}
-            sx={{
-              background: 'linear-gradient(45deg, #22c55e, #3b82f6)',
-              padding: '12px 30px',
-              borderRadius: '10px',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 10px 25px rgba(34, 197, 94, 0.3)',
-              },
-            }}
+            startIcon={<ShoppingBag size={18} />}
+            sx={styles.primaryBtn}
           >
-            Continue Shopping
+            CONTINUE SHOPPING
           </Button>
           
           <Button
             component={Link}
             to="/orders"
-            variant="outlined"
-            sx={{
-              borderColor: '#22c55e',
-              color: '#22c55e',
-              padding: '12px 30px',
-              borderRadius: '10px',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              '&:hover': {
-                borderColor: '#22c55e',
-                background: 'rgba(34, 197, 94, 0.1)',
-              },
-            }}
+            endIcon={<ArrowRight size={18} />}
+            sx={styles.secondaryBtn}
           >
-            View Orders
+            VIEW MY ORDERS
           </Button>
         </Box>
 
-        <Typography variant="body2" sx={{ mt: 3, color: "#9ca3af" }}>
-          A confirmation email has been sent to your registered email address.
-        </Typography>
-      </Paper>
+      </Container>
     </Box>
   );
 }
+
+// --- STYLES ---
+const styles = {
+  pageBackground: {
+    background: '#ffffff',
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    py: 8,
+    overflow: 'hidden'
+  },
+  successIconWrapper: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    bgcolor: 'black',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    mb: 3,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+    animation: 'slideUp 0.5s ease-out'
+  },
+  title: {
+    fontWeight: 900,
+    fontSize: { xs: '32px', md: '48px' },
+    letterSpacing: '-2px',
+    mb: 1,
+    color: 'black',
+    textAlign: 'center',
+    animation: 'slideUp 0.6s ease-out'
+  },
+  subtitle: {
+    color: '#666',
+    fontSize: '16px',
+    textAlign: 'center',
+    mb: 6,
+    maxWidth: '400px',
+    animation: 'slideUp 0.7s ease-out'
+  },
+  perspectiveWrapper: {
+    perspective: '1500px',
+    mb: 6,
+    animation: 'slideUp 0.8s ease-out',
+    width: '100%',
+    maxWidth: '450px',
+  },
+  receiptCard: {
+    p: 4,
+    borderRadius: '0px', // Square corners for receipt look
+    background: '#fff',
+    // Realistic Receipt Shadow
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)', 
+    borderTop: '8px solid black', // Brand accent
+    position: 'relative',
+    transformStyle: 'preserve-3d',
+    animation: 'float 6s ease-in-out infinite',
+    // Zig-zag bottom edge via CSS mask or SVG (simplified here with just border)
+    borderBottom: '4px dotted #ccc' 
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    mb: 1.5,
+    alignItems: 'center'
+  },
+  label: {
+    fontSize: '11px',
+    fontWeight: 700,
+    color: '#999',
+    letterSpacing: '1px'
+  },
+  value: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: '#000',
+    fontFamily: 'Monospace, Inter, sans-serif' // Receipt font feel
+  },
+  actions: {
+    display: 'flex',
+    gap: 2,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    animation: 'slideUp 0.9s ease-out'
+  },
+  primaryBtn: {
+    bgcolor: 'black',
+    color: 'white',
+    px: 4, py: 1.5,
+    borderRadius: '0', // Sharp styling
+    fontWeight: 800,
+    fontSize: '12px',
+    letterSpacing: '1px',
+    '&:hover': {
+      bgcolor: '#333',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+    },
+    transition: 'all 0.3s ease'
+  },
+  secondaryBtn: {
+    color: 'black',
+    borderColor: 'black',
+    border: '1px solid black',
+    px: 4, py: 1.5,
+    borderRadius: '0',
+    fontWeight: 800,
+    fontSize: '12px',
+    letterSpacing: '1px',
+    '&:hover': {
+      bgcolor: '#f5f5f5',
+      borderColor: 'black',
+      transform: 'translateY(-2px)'
+    },
+    transition: 'all 0.3s ease'
+  }
+};

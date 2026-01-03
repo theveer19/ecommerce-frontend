@@ -5,23 +5,33 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.2.0",
-    "@mui/material": "^7.2.0",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "@mui/x-date-pickers": "^8.23.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@supabase/supabase-js": "^2.50.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/three": "^0.182.0",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.7",
-    "canvas-confetti": "^1.9.3",
-    "framer-motion": "^12.23.12",
+    "canvas-confetti": "^1.9.4",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.26",
+    "lucide-react": "^0.562.0",
+    "nodemailer": "^7.0.12",
+    "pdfkit": "^0.17.2",
     "razorpay": "^2.9.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.7.1",
     "react-scripts": "5.0.1",
+    "recharts": "^3.6.0",
+    "three": "^0.182.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -47,5 +57,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/styled-components": "^5.1.36"
   }
 }

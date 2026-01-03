@@ -1,299 +1,351 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { FaGem, FaShoppingCart } from "react-icons/fa";
-import { Favorite } from "@mui/icons-material";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ShoppingBag, Search, X } from "lucide-react";
+import { Box, Container, Collapse, Drawer, Input, IconButton } from "@mui/material";
 import { useCart } from "../context/CartContext";
-import { useWishlist } from "../context/WishlistContext";
 
-export default function Navbar({ userRole, session, onLogout }) {
-  const navigate = useNavigate();
-  const { cartItems, getCartCount } = useCart();
-  const { getWishlistCount } = useWishlist();
+export default function Navbar({ session, onLogout, userRole }) {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [apparelOpen, setApparelOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
-  const cartCount = getCartCount ? getCartCount() : cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
-  const wishlistCount = getWishlistCount ? getWishlistCount() : 0;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { cartItems } = useCart();
 
-  const handleNavigation = (path) => {
-    navigate(path);
+  // Check if we're on the homepage
+  const isHomePage = location.pathname === "/";
+
+  // Handle Scroll Effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    
+    if (isHomePage) {
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    } else {
+      setIsScrolled(true);
+    }
+  }, [isHomePage]);
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
   };
 
-  const handleHomeClick = () => {
-    navigate("/products");
-  };
+  // Determine navbar colors
+  let textColor, bgColor, borderColor;
+  
+  if (isHomePage) {
+    textColor = isScrolled ? '#000000' : '#FFFFFF';
+    bgColor = isScrolled ? 'rgba(255, 255, 255, 0.98)' : 'transparent';
+    borderColor = isScrolled ? '#f0f0f0' : 'transparent';
+  } else {
+    textColor = '#000000';
+    bgColor = '#FFFFFF';
+    borderColor = '#f0f0f0';
+  }
 
-  const handleSignIn = () => {
-    navigate("/");
-  };
-
-  const handleLogout = () => {
-    onLogout();
-    navigate("/");
-  };
+  // Check if current user is admin
+  const isAdmin = userRole === 'admin';
 
   return (
-    <header style={headerStyle}>
-      <div className="nav-container" style={navContainerStyle}>
-        {/* Logo */}
-        <div
-          className="logo"
-          onClick={handleHomeClick}
-          aria-label="Go to home"
-          style={logoStyle}
+    <>
+      {/* INJECT CSS ANIMATIONS */}
+      <style>
+        {`
+          @keyframes spin3D {
+            0% { transform: perspective(1000px) rotateY(0deg); }
+            100% { transform: perspective(1000px) rotateY(360deg); }
+          }
+          .nav-hover-underline::after {
+            content: '';
+            display: block;
+            width: 0;
+            height: 1px;
+            background: currentColor;
+            transition: width 0.3s ease;
+            margin-top: 2px;
+          }
+          .nav-hover-underline:hover::after {
+            width: 100%;
+          }
+        `}
+      </style>
+
+      <header style={{
+        position: 'fixed',
+        top: '35px',
+        left: 0,
+        right: 0,
+        height: '80px',
+        backgroundColor: bgColor,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 1500,
+        display: 'flex',
+        alignItems: 'center',
+        borderBottom: `1px solid ${borderColor}`,
+        backdropFilter: isScrolled ? 'blur(10px)' : 'none',
+      }}>
+        <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+          
+          {/* 1. LEFT: LOGO */}
+          <Box sx={{ width: '200px', display: 'flex', justifyContent: 'flex-start' }}>
+            <Link to="/" style={styles.logo(textColor)}>
+              OneT
+            </Link>
+          </Box>
+
+          {/* 2. CENTER: NAV LINKS (Absolute Center) */}
+          <Box sx={{ 
+            display: { xs: 'none', md: 'flex' }, 
+            gap: 6, 
+            position: 'absolute', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <Link to="/products?sort=new" className="nav-hover-underline" style={styles.navLink(textColor)}>
+              NEW IN
+            </Link>
+            
+            {/* Mega Menu Trigger */}
+            <div 
+              onMouseEnter={() => setApparelOpen(true)}
+              onMouseLeave={() => setApparelOpen(false)}
+              style={{ height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            >
+              <span className="nav-hover-underline" style={styles.navLink(textColor)}>
+                APPAREL
+              </span>
+            </div>
+
+            <Link to="/about" className="nav-hover-underline" style={styles.navLink(textColor)}>
+              STORES
+            </Link>
+          </Box>
+
+          {/* 3. RIGHT: ACTIONS */}
+          <Box sx={{ width: '300px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 3 }}>
+            <button onClick={() => setSearchOpen(true)} className="nav-hover-underline" style={styles.textButton(textColor)}>
+              SEARCH
+            </button>
+            
+            {/* Login / Account Logic */}
+            {session ? (
+              <>
+                <Link to="/orders" className="nav-hover-underline" style={styles.textButton(textColor)}>
+                  ACCOUNT
+                </Link>
+                
+                {isAdmin && (
+                  <Link to="/admin" style={{
+                    ...styles.textButton(textColor),
+                    border: `1px solid ${textColor}`,
+                    padding: '4px 8px',
+                    marginRight: '8px'
+                  }}>
+                    ADMIN
+                  </Link>
+                )}
+                
+                <button onClick={onLogout} className="nav-hover-underline" style={styles.textButton(textColor)}>
+                  LOGOUT
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="nav-hover-underline" style={styles.textButton(textColor)}>
+                LOGIN
+              </Link>
+            )}
+
+            {/* ROTATING CART ICON - FORCE BLACK COLOR */}
+            <Link to="/cart" style={{ 
+              position: 'relative', 
+              color: '#000000', // STRICTLY BLACK
+              textDecoration: 'none', 
+              display: 'flex', 
+              alignItems: 'center' 
+            }}>
+               <Box sx={{ 
+                 position: 'relative', 
+                 display: 'flex', 
+                 alignItems: 'center',
+                 animation: 'spin3D 6s linear infinite',
+                 transformStyle: 'preserve-3d'
+               }}>
+                 {/* Stroke is black because parent color is #000000 */}
+                 <ShoppingBag size={20} strokeWidth={1.5} />
+               </Box>
+               
+               {/* Cart Count Badge */}
+               {cartItems.length > 0 && (
+                 <span style={{ 
+                   marginLeft: '6px', 
+                   fontSize: '11px', 
+                   fontWeight: 700,
+                   position: 'absolute',
+                   right: -12,
+                   top: 0,
+                   color: '#000000' // Badge text also black
+                 }}>
+                   ({cartItems.length})
+                 </span>
+               )}
+            </Link>
+          </Box>
+        </Container>
+      </header>
+
+      {/* MEGA MENU: APPAREL */}
+      <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '115px', left: 0, right: 0, zIndex: 1400 }}>
+        <div 
+          onMouseEnter={() => setApparelOpen(true)}
+          onMouseLeave={() => setApparelOpen(false)}
+          style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #eee', padding: '50px 0', boxShadow: '0 10px 40px rgba(0,0,0,0.05)' }}
         >
-          <span style={{ color: "#22c55e", fontSize: 22, display: 'flex', alignItems: 'center' }}>
-            <FaGem />
-          </span>
-          <span style={{ marginLeft: '8px' }}>OneT</span>
+          <Container maxWidth="lg">
+            <Box sx={{ display: 'flex', gap: 15, justifyContent: 'center' }}>
+              <Box>
+                <div style={styles.menuHeader}>TOP WEAR</div>
+                <div style={styles.menuList}>
+                  <Link to="/products?cat=tshirts" style={styles.menuItem}>T-SHIRTS</Link>
+                  <Link to="/products?cat=hoodies" style={styles.menuItem}>HOODIES</Link>
+                  <Link to="/products?cat=jackets" style={styles.menuItem}>JACKETS</Link>
+                  <Link to="/products?cat=shirts" style={styles.menuItem}>SHIRTS</Link>
+                  <Link to="/products?cat=sweatshirts" style={styles.menuItem}>SWEATSHIRTS</Link>
+                </div>
+              </Box>
+              <Box>
+                <div style={styles.menuHeader}>BOTTOM WEAR</div>
+                <div style={styles.menuList}>
+                   <Link to="/products?cat=pants" style={styles.menuItem}>PANTS</Link>
+                   <Link to="/products?cat=cargos" style={styles.menuItem}>CARGOS</Link>
+                   <Link to="/products?cat=shorts" style={styles.menuItem}>SHORTS</Link>
+                </div>
+              </Box>
+               <Box>
+                <div style={styles.menuHeader}>ACCESSORIES</div>
+                <div style={styles.menuList}>
+                   <Link to="/products?cat=caps" style={styles.menuItem}>CAPS</Link>
+                   <Link to="/products?cat=bags" style={styles.menuItem}>BAGS</Link>
+                   <Link to="/products?cat=jewelry" style={styles.menuItem}>JEWELRY</Link>
+                </div>
+              </Box>
+            </Box>
+          </Container>
         </div>
+      </Collapse>
 
-        {/* Navigation Links */}
-        <nav className="nav-links" role="navigation" aria-label="Main navigation" style={navLinksStyle}>
-          <button 
-            onClick={() => handleNavigation("/products")} 
-            aria-label="Products"
-            style={navButtonStyle}
+      {/* SEARCH DRAWER */}
+      <Drawer 
+        anchor="top" 
+        open={searchOpen} 
+        onClose={() => { setSearchOpen(false); setSearchQuery(""); }}
+        transitionDuration={400}
+        PaperProps={{ sx: { height: '100vh', backgroundColor: 'white' } }}
+      >
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <IconButton 
+            onClick={() => { setSearchOpen(false); setSearchQuery(""); }} 
+            sx={{ position: 'absolute', top: 40, right: 40, color: 'black' }}
           >
-            Products
-          </button>
-          <button 
-            onClick={() => handleNavigation("/deals")} 
-            aria-label="Deals"
-            style={navButtonStyle}
-          >
-            Deals
-          </button>
-          <button 
-            onClick={() => handleNavigation("/categories")} 
-            aria-label="Categories"
-            style={navButtonStyle}
-          >
-            Categories
-          </button>
-          <button 
-            onClick={() => handleNavigation("/about")} 
-            aria-label="About"
-            style={navButtonStyle}
-          >
-            About
-          </button>
-
-          {/* Admin Links - Only show for admin users */}
-          {userRole === "admin" && (
-            <>
-              <button 
-                onClick={() => handleNavigation("/admin")} 
-                aria-label="Admin Dashboard"
-                style={navButtonStyle}
-              >
-                Admin Dashboard
-              </button>
-              <button 
-                onClick={() => handleNavigation("/admin/orders")} 
-                aria-label="Manage Orders"
-                style={navButtonStyle}
-              >
-                Manage Orders
-              </button>
-              <button 
-                onClick={() => handleNavigation("/admin/users")} 
-                aria-label="Manage Users"
-                style={navButtonStyle}
-              >
-                Manage Users
-              </button>
-            </>
-          )}
-        </nav>
-
-        {/* Navigation Actions */}
-        <div className="nav-actions" style={navActionsStyle}>
-          {/* Wishlist Icon */}
-          <div 
-            className="wishlist-icon" 
-            onClick={() => handleNavigation("/wishlist")} 
-            role="button" 
-            aria-label="Open wishlist"
-            style={wishlistIconStyle}
-          >
-            <Favorite />
-            {wishlistCount > 0 && (
-              <span className="wishlist-count" aria-hidden="true" style={wishlistCountStyle}>
-                {wishlistCount > 99 ? '99+' : wishlistCount}
-              </span>
-            )}
-          </div>
-
-          {/* Cart Icon */}
-          <div 
-            className="cart-icon" 
-            onClick={() => handleNavigation("/cart")} 
-            role="button" 
-            aria-label="Open cart"
-            style={cartIconStyle}
-          >
-            <FaShoppingCart />
-            {cartCount > 0 && (
-              <span className="cart-count" aria-hidden="true" style={cartCountStyle}>
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </div>
-
-          {/* Conditional Sign In / Logout */}
-          {session ? (
-            <button 
-              className="btn-secondary" 
-              onClick={handleLogout}
-              style={signInButtonStyle}
-            >
-              Logout
-            </button>
-          ) : (
-            <button 
-              className="btn-secondary" 
-              onClick={handleSignIn}
-              style={signInButtonStyle}
-            >
-              Sign In
-            </button>
-          )}
-        </div>
-      </div>
-    </header>
+            <X size={32} strokeWidth={1} />
+          </IconButton>
+          
+          <Box sx={{ width: '60%', maxWidth: 600, position: 'relative' }}>
+            <Input
+              autoFocus
+              fullWidth
+              disableUnderline
+              type="text"
+              placeholder="SEARCH"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleSearch}
+              sx={{
+                fontSize: { xs: '32px', md: '48px' },
+                fontWeight: 800,
+                textAlign: 'center',
+                letterSpacing: '-1px',
+                borderBottom: '2px solid #000',
+                paddingBottom: '10px',
+                '& input': { textAlign: 'center', textTransform: 'uppercase' }
+              }}
+            />
+          </Box>
+          
+          <Box sx={{ mt: 4, opacity: 0.5 }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>PRESS ENTER TO SEARCH</span>
+          </Box>
+        </Box>
+      </Drawer>
+    </>
   );
 }
 
-// Inline styles
-const headerStyle = {
-  position: 'sticky',
-  top: 0,
-  zIndex: 9999,
-  pointerEvents: 'auto',
-  background: 'rgba(10, 15, 31, 0.95)',
-  backdropFilter: 'blur(10px)',
-  borderBottom: '1px solid rgba(255,255,255,0.08)',
-  padding: '15px 0',
-  width: '100%',
-};
-
-const navContainerStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '12px',
-  maxWidth: '1400px',
-  margin: '0 auto',
-  padding: '0 20px',
-};
-
-const logoStyle = {
-  fontSize: '28px',
-  fontWeight: '700',
-  background: 'linear-gradient(45deg, #22c55e, #3b82f6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  cursor: 'pointer',
-  userSelect: 'none',
-};
-
-const navLinksStyle = {
-  display: 'flex',
-  gap: '30px',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-};
-
-const navButtonStyle = {
-  background: 'transparent',
-  border: 'none',
-  color: '#f8fafc',
-  fontWeight: '500',
-  transition: 'all 0.3s ease',
-  position: 'relative',
-  padding: '6px 0',
-  cursor: 'pointer',
-  fontSize: '16px',
-  fontFamily: 'inherit',
-};
-
-const navActionsStyle = {
-  display: 'flex',
-  gap: '15px',
-  alignItems: 'center',
-};
-
-const wishlistIconStyle = {
-  position: 'relative',
-  fontSize: '1.5rem',
-  cursor: 'pointer',
-  color: '#fff',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '8px',
-  borderRadius: '8px',
-  transition: 'background-color 0.3s ease',
-};
-
-const wishlistCountStyle = {
-  position: 'absolute',
-  top: '-8px',
-  right: '-8px',
-  background: 'linear-gradient(45deg, #ef4444, #f59e0b)',
-  color: 'white',
-  minWidth: '20px',
-  height: '20px',
-  borderRadius: '50%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontSize: '0.7rem',
-  fontWeight: '700',
-  padding: '0 4px',
-};
-
-const cartIconStyle = {
-  position: 'relative',
-  fontSize: '1.5rem',
-  cursor: 'pointer',
-  color: '#fff',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '8px',
-  borderRadius: '8px',
-  transition: 'background-color 0.3s ease',
-};
-
-const cartCountStyle = {
-  position: 'absolute',
-  top: '-8px',
-  right: '-8px',
-  background: 'linear-gradient(45deg, #ef4444, #f59e0b)',
-  color: 'white',
-  minWidth: '20px',
-  height: '20px',
-  borderRadius: '50%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontSize: '0.7rem',
-  fontWeight: '700',
-  padding: '0 4px',
-};
-
-const signInButtonStyle = {
-  background: 'rgba(17,25,40,0.85)',
-  border: '1px solid rgba(34,197,94,0.3)',
-  color: 'white',
-  padding: '10px 20px',
-  borderRadius: '10px',
-  cursor: 'pointer',
-  fontWeight: '600',
-  transition: 'all 0.3s ease-in-out',
-  fontSize: '16px',
-  fontFamily: 'inherit',
+const styles = {
+  logo: (color) => ({
+    fontSize: '26px',
+    fontWeight: 900,
+    letterSpacing: '-1.5px',
+    color: color,
+    fontFamily: 'Inter, sans-serif',
+    textDecoration: 'none',
+    textTransform: 'uppercase',
+  }),
+  navLink: (color) => ({
+    fontSize: '11px',
+    fontWeight: 700,
+    color: color,
+    textTransform: 'uppercase',
+    letterSpacing: '1.5px',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    position: 'relative',
+    paddingBottom: '2px',
+  }),
+  textButton: (color) => ({
+    background: 'none',
+    border: 'none',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: color,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    fontFamily: 'inherit',
+    padding: 0,
+    position: 'relative',
+  }),
+  menuHeader: {
+    fontSize: '10px',
+    fontWeight: 800,
+    color: '#999',
+    marginBottom: '24px',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+  },
+  menuList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  menuItem: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#000',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    textDecoration: 'none',
+    transition: 'opacity 0.2s',
+  }
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
@@ -12,34 +12,376 @@ import {
   TextField,
   Paper,
   Grid,
-  Divider,
   FormControl,
   FormLabel,
   RadioGroup,
   FormControlLabel,
   Radio,
   Alert,
+  Card,
+  CardContent,
+  CardMedia,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  CircularProgress,
+  Container,
+  InputAdornment,
+  Checkbox,
+  Divider,
+  Badge,
+  Snackbar,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
+import {
+  ArrowBack,
+  ShoppingBag,
+  CreditCard,
+  Money,
+  LocalShipping,
+  Security,
+  VerifiedUser,
+  CheckCircle,
+  Warning,
+  ExpandMore,
+  LocationOn,
+  Phone,
+  Email,
+  Person,
+  Home,
+  Business,
+  Close,
+  Lock,
+  Payment,
+  Receipt,
+} from "@mui/icons-material";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Change this to your deployed backend if needed
-const BACKEND_URL =
-  process.env.REACT_APP_BACKEND_URL || "https://ecommerce-backend-3v0q.onrender.com";
+// Enhanced styles with black and white theme
+const styles = {
+  root: {
+    minHeight: '100vh',
+    background: '#FFFFFF',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  floatingElement1: {
+    position: 'fixed',
+    top: '10%',
+    left: '5%',
+    width: '300px',
+    height: '300px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 70%)',
+    zIndex: 0,
+    animation: 'float 20s ease-in-out infinite',
+  },
+  floatingElement2: {
+    position: 'fixed',
+    bottom: '10%',
+    right: '5%',
+    width: '400px',
+    height: '400px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0) 70%)',
+    zIndex: 0,
+    animation: 'float 25s ease-in-out infinite reverse',
+  },
+  container: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '20px',
+    position: 'relative',
+    zIndex: 1,
+  },
+  header: {
+    textAlign: 'center',
+    mb: 4,
+    pt: 2,
+  },
+  title: {
+    fontSize: { xs: '2rem', md: '3rem' },
+    fontWeight: 800,
+    color: '#000000',
+    mb: 1,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+  },
+  subtitle: {
+    color: '#666666',
+    fontSize: '1.1rem',
+    fontWeight: 400,
+  },
+  stepper: {
+    background: '#FFFFFF',
+    border: '1px solid #E5E5E5',
+    borderRadius: '12px',
+    p: 3,
+    mb: 4,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+  },
+  stepIcon: {
+    '&.Mui-active': {
+      color: '#000000',
+      transform: 'scale(1.1)',
+    },
+    '&.Mui-completed': {
+      color: '#000000',
+      transform: 'scale(1.1)',
+    },
+    transition: 'all 0.3s ease',
+  },
+  paper: {
+    background: '#FFFFFF',
+    border: '1px solid #E5E5E5',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+    overflow: 'hidden',
+  },
+  formSection: {
+    p: 4,
+  },
+  sectionTitle: {
+    color: '#000000',
+    fontWeight: 700,
+    mb: 3,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    fontSize: '1.3rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  textField: {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '8px',
+      background: '#FFFFFF',
+      '& fieldset': {
+        borderColor: '#DDDDDD',
+        borderWidth: '1px',
+      },
+      '&:hover fieldset': {
+        borderColor: '#000000',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#000000',
+        borderWidth: '1px',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: '#666666',
+      fontWeight: 500,
+    },
+    '& .MuiInputAdornment-root': {
+      color: '#000000',
+    },
+  },
+  paymentMethodCard: {
+    border: '1px solid #DDDDDD',
+    borderRadius: '8px',
+    p: 3,
+    mb: 2,
+    background: '#FFFFFF',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    '&:hover': {
+      borderColor: '#000000',
+      background: '#FAFAFA',
+      transform: 'translateY(-2px)',
+    },
+    '&.selected': {
+      borderColor: '#000000',
+      background: '#FAFAFA',
+    },
+  },
+  paymentIcon: {
+    fontSize: 32,
+    color: '#000000',
+    mb: 1,
+  },
+  orderSummary: {
+    position: 'sticky',
+    top: 100,
+    background: '#FFFFFF',
+    border: '1px solid #E5E5E5',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+    p: 4,
+    height: 'fit-content',
+  },
+  orderItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    mb: 2,
+    p: 2,
+    background: '#FAFAFA',
+    borderRadius: '8px',
+    border: '1px solid #EEEEEE',
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: '8px',
+    objectFit: 'cover',
+    border: '1px solid #EEEEEE',
+  },
+  priceBreakdown: {
+    background: '#FAFAFA',
+    borderRadius: '8px',
+    p: 3,
+    border: '1px solid #EEEEEE',
+  },
+  totalAmount: {
+    fontSize: '1.5rem',
+    fontWeight: 800,
+    color: '#000000',
+  },
+  trustBadge: {
+    background: '#FAFAFA',
+    border: '1px solid #E5E5E5',
+    borderRadius: '8px',
+    p: 2,
+    textAlign: 'center',
+    mt: 2,
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      background: '#F0F0F0',
+      transform: 'translateY(-2px)',
+    },
+  },
+  button: {
+    borderRadius: '8px',
+    px: 4,
+    py: 1.5,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    transition: 'all 0.3s ease',
+    letterSpacing: '0.5px',
+  },
+  primaryButton: {
+    background: '#000000',
+    color: '#FFFFFF',
+    border: '1px solid #000000',
+    '&:hover': {
+      background: '#333333',
+      borderColor: '#333333',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    },
+    '&:disabled': {
+      background: '#CCCCCC',
+      borderColor: '#CCCCCC',
+      color: '#999999',
+    },
+  },
+  secondaryButton: {
+    color: '#666666',
+    border: '1px solid #DDDDDD',
+    background: '#FFFFFF',
+    '&:hover': {
+      background: '#FAFAFA',
+      borderColor: '#000000',
+      color: '#000000',
+    },
+  },
+  accordion: {
+    background: '#FAFAFA',
+    borderRadius: '8px',
+    border: '1px solid #E5E5E5',
+    mb: 2,
+    '&:before': {
+      display: 'none',
+    },
+  },
+  progressIndicator: {
+    background: '#000000',
+    height: '3px',
+    borderRadius: '2px',
+    transition: 'width 0.5s ease',
+  },
+  emptyCart: {
+    textAlign: 'center',
+    py: 10,
+    background: '#FFFFFF',
+    borderRadius: '12px',
+    border: '2px dashed #DDDDDD',
+  },
+  badge: {
+    '& .MuiBadge-badge': {
+      background: '#000000',
+      color: '#FFFFFF',
+      fontWeight: 600,
+      border: '2px solid #FFFFFF',
+    },
+  },
+  chip: {
+    background: '#000000',
+    color: '#FFFFFF',
+    fontWeight: 600,
+    borderRadius: '4px',
+  },
+  snackbar: {
+    borderRadius: '8px',
+    background: '#FFFFFF',
+    border: '1px solid #E5E5E5',
+  },
+  divider: {
+    borderColor: '#EEEEEE',
+  },
+  alert: {
+    borderRadius: '8px',
+    '&.MuiAlert-standardError': {
+      background: '#FFF5F5',
+      border: '1px solid #FED7D7',
+    },
+    '&.MuiAlert-standardSuccess': {
+      background: '#F0FFF4',
+      border: '1px solid #C6F6D5',
+    },
+    '&.MuiAlert-standardInfo': {
+      background: '#EBF8FF',
+      border: '1px solid #BEE3F8',
+    },
+    '&.MuiAlert-standardWarning': {
+      background: '#FFFBEB',
+      border: '1px solid #FEF3C7',
+    },
+  },
+};
 
 const steps = ['Shipping Address', 'Payment Method', 'Review Order'];
+
+// Backend URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://ecommerce-backend-qqhi.onrender.com";
+const RAZORPAY_KEY = "rzp_live_RzGifw58xDx28e";
+ // Use your live key
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Expecting ProductDetailsPage to send { buyNowItem: {...} }
   const buyNowItem = location.state?.buyNowItem ?? null;
+  const itemsToShow = useMemo(() => buyNowItem ? [buyNowItem] : (cartItems || []), [buyNowItem, cartItems]);
 
   const [activeStep, setActiveStep] = useState(0);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -52,59 +394,128 @@ export default function CheckoutPage() {
     state: '',
     zipCode: '',
     country: 'India',
+    saveAddress: false,
   });
 
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
-  // Compute total
-  const itemsToShow = buyNowItem ? [buyNowItem] : (cartItems || []);
-  const subtotal = itemsToShow.reduce((sum, item) => {
+  // Calculate totals
+  const subtotal = useMemo(() => itemsToShow.reduce((sum, item) => {
     const price = parseFloat(item.price) || 0;
     const qty = Number(item.quantity || 1);
     return sum + price * qty;
-  }, 0);
+  }, 0), [itemsToShow]);
 
   const shippingFee = subtotal > 999 ? 0 : 50;
   const tax = subtotal * 0.18; // 18% GST
   const totalAmount = subtotal + shippingFee + tax;
 
-  // Check authentication and fetch user data
+  // Authentication check
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/");
-        return;
-      }
-      setSession(session);
-      
-      // Prefill email if available
-      if (session.user?.email) {
-        setShippingInfo(prev => ({ ...prev, email: session.user.email }));
+      try {
+        const { data } = await supabase.auth.getSession();
+        const currentSession = data?.session ?? null;
+        setSession(currentSession);
+        
+        if (currentSession?.user?.email) {
+          setShippingInfo(prev => ({ 
+            ...prev, 
+            email: currentSession.user.email 
+          }));
+        }
+      } catch (err) {
+        console.error("Error getting session:", err);
       }
     };
+
     checkAuth();
-  }, [navigate]);
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+
+    return () => {
+      if (listener?.subscription?.unsubscribe) {
+        listener.subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  // Progress tracking
+  useEffect(() => {
+    const progress = ((activeStep + 1) / steps.length) * 100;
+    setProgress(progress);
+  }, [activeStep]);
+
+  // Load Razorpay script on component mount
+  useEffect(() => {
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        if (window.Razorpay) {
+          console.log("✅ Razorpay already loaded");
+          setRazorpayLoaded(true);
+          return resolve(true);
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        
+        script.onload = () => {
+          console.log("✅ Razorpay SDK loaded");
+          setRazorpayLoaded(true);
+          resolve(true);
+        };
+        
+        script.onerror = (error) => {
+          console.error("❌ Failed to load Razorpay script:", error);
+          setRazorpayLoaded(false);
+          resolve(false);
+        };
+        
+        document.body.appendChild(script);
+      });
+    };
+
+    loadRazorpayScript();
+  }, []);
+
+  // Show message in snackbar
+  const showMessage = useCallback((type, text) => {
+    setMessage({ type, text });
+    setShowSnackbar(true);
+  }, []);
 
   // Form validation
-  const validateStep = (step) => {
+  const validateStep = useCallback((step) => {
     switch (step) {
       case 0: // Shipping Address
         const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zipCode'];
         const missingFields = requiredFields.filter(field => !shippingInfo[field]);
+        
         if (missingFields.length > 0) {
-          setMessage({ type: 'error', text: 'Please fill all required fields' });
+          showMessage('error', 'Please fill in all required fields');
           return false;
         }
+        
+        if (!/^\S+@\S+\.\S+$/.test(shippingInfo.email)) {
+          showMessage('error', 'Please enter a valid email address');
+          return false;
+        }
+        
         if (!/^\d{10}$/.test(shippingInfo.phone)) {
-          setMessage({ type: 'error', text: 'Please enter a valid 10-digit phone number' });
+          showMessage('error', 'Please enter a valid 10-digit phone number');
           return false;
         }
+        
         return true;
 
       case 1: // Payment Method
         if (!paymentMethod) {
-          setMessage({ type: 'error', text: 'Please select a payment method' });
+          showMessage('error', 'Please select a payment method');
           return false;
         }
         return true;
@@ -112,150 +523,118 @@ export default function CheckoutPage() {
       default:
         return true;
     }
-  };
+  }, [shippingInfo, paymentMethod, showMessage]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (validateStep(activeStep)) {
       setActiveStep((prevStep) => prevStep + 1);
       setMessage({ type: '', text: '' });
+      setShowSnackbar(false);
     }
-  };
+  }, [activeStep, validateStep]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setActiveStep((prevStep) => prevStep - 1);
     setMessage({ type: '', text: '' });
-  };
+    setShowSnackbar(false);
+  }, []);
 
-  const handleShippingChange = (field, value) => {
+  const handleShippingChange = useCallback((field, value) => {
     setShippingInfo(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  // Fallback function using backend for order saving
-  const saveOrderViaBackend = async (paymentMethod, paymentId = "") => {
+  const handlePaymentMethodChange = useCallback((method) => {
+    setPaymentMethod(method);
+  }, []);
+
+  // ✅ FIXED: Save order to backend
+  const saveOrderToBackend = useCallback(async (paymentMethod, paymentId = null) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const itemsToSave = buyNowItem ? [buyNowItem] : cartItems;
       
-      const orderData = {
-        user_id: user?.id,
-        items: itemsToSave,
-        total_amount: totalAmount,
-        subtotal: subtotal,
-        shipping_fee: shippingFee,
-        tax: tax,
-        shipping_info: shippingInfo,
+      // Prepare order payload
+      const orderPayload = {
+        user_id: user?.id || null,
+        items: itemsToShow.map(item => ({
+          id: item.id || `prod_${Date.now()}`,
+          name: item.name || item.title || "Product",
+          price: parseFloat(item.price) || 0,
+          quantity: Number(item.quantity) || 1,
+          image: item.image_url || item.images?.[0] || "https://via.placeholder.com/150",
+        })),
+        total_amount: parseFloat(totalAmount.toFixed(2)),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        shipping_fee: parseFloat(shippingFee.toFixed(2)),
+        tax: parseFloat(tax.toFixed(2)),
+        shipping_info: {
+          name: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
+          email: shippingInfo.email,
+          phone: shippingInfo.phone,
+          address: shippingInfo.address,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          pincode: shippingInfo.zipCode,
+          country: shippingInfo.country,
+        },
         payment_method: paymentMethod,
         payment_id: paymentId,
-        status: 'confirmed'
+        status: paymentMethod === 'cod' ? 'pending' : 'confirmed',
       };
 
-      console.log('Saving order via backend:', orderData);
+      console.log('📦 Saving order to backend:', orderPayload);
 
+      // Call backend to save order
       const response = await fetch(`${BACKEND_URL}/save-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
       });
 
       const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Backend order failed');
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Failed to save order');
       }
-      
-      console.log('Backend order save successful:', result);
-      return result.order;
+
+      console.log('✅ Order saved successfully:', result);
+      return result.order || result.data;
+
     } catch (err) {
-      console.error('Backend order save failed:', err);
+      console.error('❌ Save order failed:', err);
       throw err;
     }
-  };
+  }, [itemsToShow, totalAmount, subtotal, shippingFee, tax, shippingInfo]);
 
-  // Save order to Supabase directly (for COD)
-  const saveOrderToSupabase = async (paymentMethod, paymentId = "") => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
-      const itemsToSave = buyNowItem ? [buyNowItem] : cartItems;
-
-      // Prepare minimal order data to avoid column errors
-      const orderData = {
-        user_id: user.id,
-        items: itemsToSave,
-        total_amount: totalAmount,
-        payment_method: paymentMethod,
-        status: 'confirmed',
-      };
-
-      // Only add optional fields if they exist in the table
-      if (shippingInfo) orderData.shipping_info = shippingInfo;
-      if (paymentId) orderData.payment_id = paymentId;
-
-      console.log('Saving order to Supabase:', orderData);
-
-      const { data, error } = await supabase
-        .from("orders")
-        .insert([orderData])
-        .select();
-
-      if (error) {
-        console.error("Supabase insert error:", error);
-        
-        // If column error, try the backend endpoint
-        if (error.message.includes('column') && error.message.includes('does not exist')) {
-          console.log('Column missing, trying backend endpoint...');
-          return await saveOrderViaBackend(paymentMethod, paymentId);
-        }
-        
-        throw error;
-      }
-
-      return data?.[0];
-    } catch (err) {
-      console.error("Failed to save order to Supabase:", err);
-      throw err;
-    }
-  };
-
-  // Handle Cash on Delivery
-  const handleCODPayment = async () => {
+  // ✅ FIXED: Handle Cash on Delivery
+  const handleCODPayment = useCallback(async () => {
     setLoading(true);
-    setMessage({ type: '', text: '' });
+    setPaymentProcessing(true);
+    showMessage('info', 'Processing your COD order...');
     
     try {
-      console.log('Starting COD payment process...');
+      const orderData = await saveOrderToBackend("cod");
       
-      // Try direct Supabase first, then fallback to backend
-      let order;
-      try {
-        order = await saveOrderToSupabase("Cash on Delivery");
-      } catch (supabaseError) {
-        console.log('Supabase failed, trying backend...', supabaseError);
-        order = await saveOrderViaBackend("Cash on Delivery");
-      }
-      
-      if (order) {
-        console.log('COD order saved successfully:', order);
-        
-        // Only clear the cart when the order was placed from the cart (not buyNow)
+      if (orderData) {
+        // Clear cart if not buy now
         if (!buyNowItem) {
           clearCart();
         }
         
-        // Navigate to thank-you page with order details
+        // Navigate to thank you page
         navigate("/thank-you", { 
           state: { 
             orderDetails: {
-              id: order.id,
+              id: orderData.id,
+              order_number: orderData.order_number,
               total_amount: totalAmount,
-              items: buyNowItem ? [buyNowItem] : cartItems,
+              items: itemsToShow,
               shipping_info: shippingInfo,
               payment_method: "Cash on Delivery",
-              status: 'confirmed'
+              payment_id: null,
+              status: 'pending',
+              created_at: orderData.created_at || new Date().toISOString(),
             } 
           } 
         });
@@ -264,134 +643,199 @@ export default function CheckoutPage() {
       }
     } catch (err) {
       console.error("COD payment error:", err);
-      setMessage({ 
-        type: 'error', 
-        text: `COD order failed: ${err.message || 'Please try again'}` 
-      });
+      showMessage('error', `Order failed: ${err.message || 'Please try again'}`);
     } finally {
       setLoading(false);
+      setPaymentProcessing(false);
     }
-  };
+  }, [saveOrderToBackend, buyNowItem, clearCart, navigate, itemsToShow, totalAmount, shippingInfo, showMessage]);
 
-  // Load Razorpay script
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
-  // Handle Razorpay payment
-  const handleRazorpayPayment = async () => {
+  // ✅ FIXED: Razorpay Payment Handler (WORKING VERSION)
+  const handleRazorpayPayment = useCallback(async () => {
+    console.log("💰 Starting Razorpay payment process...");
+    
     setLoading(true);
-    setMessage({ type: '', text: '' });
-    
-    const sdkLoaded = await loadRazorpayScript();
-    
-    if (!sdkLoaded) {
-      setMessage({ type: 'error', text: 'Razorpay SDK failed to load' });
-      setLoading(false);
-      return;
-    }
+    setPaymentProcessing(true);
+    setPaymentDialog(true);
+    showMessage('info', 'Initializing payment gateway...');
 
     try {
+      // Check if Razorpay is loaded
+      if (!window.Razorpay && !razorpayLoaded) {
+        throw new Error("Payment gateway not loaded. Please refresh the page.");
+      }
+
+      // Wait a moment for Razorpay to be ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 1: Create order with backend
+      console.log("📦 Creating order with backend...");
       const orderRes = await fetch(`${BACKEND_URL}/create-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: totalAmount }),
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          amount: totalAmount
+        }),
       });
 
       if (!orderRes.ok) {
-        throw new Error("Failed to create Razorpay order");
+        const errorData = await orderRes.json();
+        console.error("❌ Backend create-order error:", errorData);
+        throw new Error(errorData.error || errorData.message || "Failed to create payment order");
       }
 
-      const order = await orderRes.json();
+      const orderData = await orderRes.json();
+      console.log("✅ Backend response:", orderData);
 
+      // ✅ Correct validation for Razorpay response
+if (!orderData.id || !orderData.amount) {
+  throw new Error("Invalid order response from server");
+}
+
+const razorpayOrder = orderData;
+
+
+      // Step 2: Prepare payment options
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY || "rzp_test_AiMI5J5tPyfEYz",
-        amount: order.amount,
-        currency: order.currency,
-        order_id: order.id,
-        name: "LUXE Fashion",
+        key: RAZORPAY_TEST_KEY, // Your Razorpay test key
+        amount: razorpayOrder.amount,
+        currency: "INR",
+        order_id: razorpayOrder.id,
+        name: "ONE-T Fashion Store",
         description: "Order Payment",
+        image: "https://cdn-icons-png.flaticon.com/512/2456/2456702.png",
         handler: async function (response) {
+          console.log("✅ Payment successful response:", response);
+          setPaymentStatus('success');
+          showMessage('success', 'Payment successful! Saving your order...');
+          
           try {
-            // Save order with payment ID
-            let savedOrder;
-            try {
-              savedOrder = await saveOrderToSupabase("Razorpay", response.razorpay_payment_id);
-            } catch (supabaseError) {
-              console.log('Supabase failed, trying backend...', supabaseError);
-              savedOrder = await saveOrderViaBackend("Razorpay", response.razorpay_payment_id);
-            }
+            // Step 3: Save order to database
+            const savedOrder = await saveOrderToBackend("razorpay", response.razorpay_payment_id);
             
             if (savedOrder) {
-              if (!buyNowItem) clearCart();
-              navigate("/thank-you", { 
-                state: { 
-                  orderDetails: {
-                    id: savedOrder.id,
-                    total_amount: totalAmount,
-                    items: buyNowItem ? [buyNowItem] : cartItems,
-                    shipping_info: shippingInfo,
-                    payment_method: "Razorpay",
-                    payment_id: response.razorpay_payment_id,
-                    status: 'confirmed'
+              // Clear cart if not buy now
+              if (!buyNowItem) {
+                clearCart();
+              }
+              
+              // Close payment dialog
+              setPaymentDialog(false);
+              
+              // Navigate to thank you page
+              setTimeout(() => {
+                navigate("/thank-you", { 
+                  state: { 
+                    orderDetails: {
+                      id: savedOrder.id,
+                      order_number: savedOrder.order_number,
+                      total_amount: totalAmount,
+                      items: itemsToShow,
+                      shipping_info: shippingInfo,
+                      payment_method: "Razorpay",
+                      payment_id: response.razorpay_payment_id,
+                      status: 'confirmed',
+                      created_at: savedOrder.created_at || new Date().toISOString(),
+                    } 
                   } 
-                } 
-              });
+                });
+              }, 1500);
             }
-          } catch (err) {
-            console.error("Error saving Razorpay order:", err);
-            setMessage({ type: 'error', text: 'Payment successful but order save failed' });
+          } catch (saveError) {
+            console.error("❌ Error saving order after payment:", saveError);
+            showMessage('error', 'Payment successful but order save failed. Please contact support.');
+            setPaymentStatus('error');
+          } finally {
+            setLoading(false);
+            setPaymentProcessing(false);
           }
         },
         prefill: {
-          name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          name: `${shippingInfo.firstName} ${shippingInfo.lastName}`.trim(),
           email: shippingInfo.email,
           contact: shippingInfo.phone,
         },
-        theme: { color: "#3399cc" },
+        notes: {
+          address: shippingInfo.address,
+        },
+        theme: {
+          color: "#000000",
+          backdrop_color: "#FFFFFF",
+        },
         modal: {
           ondismiss: function() {
+            console.log("Payment modal dismissed by user");
+            setPaymentDialog(false);
+            setPaymentStatus('cancelled');
+            showMessage('info', 'Payment cancelled');
             setLoading(false);
-            setMessage({ type: 'info', text: 'Payment cancelled' });
-          }
+            setPaymentProcessing(false);
+          },
+          escape: true,
+          backdropclose: true,
         }
       };
 
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
-    } catch (err) {
-      console.error("Razorpay error:", err);
-      setMessage({ type: 'error', text: 'Payment failed. Please try again.' });
+      // Add payment failure handler
+      options.modal.ondismiss = function() {
+        console.log("Payment modal closed");
+        setPaymentDialog(false);
+        showMessage('info', 'Payment cancelled');
+        setLoading(false);
+        setPaymentProcessing(false);
+      };
+
+      // Step 4: Create and open Razorpay instance
+      console.log("🔄 Opening Razorpay modal...");
+      const rzp = new window.Razorpay(options);
+      
+      // Listen for payment failure
+      rzp.on('payment.failed', function (response) {
+        console.error("❌ Payment failed:", response.error);
+        setPaymentStatus('failed');
+        showMessage('error', `Payment failed: ${response.error.description || 'Please try again'}`);
+        setLoading(false);
+        setPaymentProcessing(false);
+      });
+
+      // Open the payment modal
+      rzp.open();
+      
+      // Store reference for cleanup
+      window.currentRzp = rzp;
+
+    } catch (error) {
+      console.error("❌ Razorpay initialization error:", error);
+      setPaymentDialog(false);
+      showMessage('error', `Payment failed: ${error.message || 'Please try again'}`);
       setLoading(false);
+      setPaymentProcessing(false);
     }
-  };
+  }, [razorpayLoaded, totalAmount, saveOrderToBackend, buyNowItem, clearCart, navigate, itemsToShow, shippingInfo, showMessage]);
 
   // Handle final order placement
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = useCallback(async () => {
     if (paymentMethod === 'razorpay') {
       await handleRazorpayPayment();
     } else if (paymentMethod === 'cod') {
       await handleCODPayment();
     }
-  };
+  }, [paymentMethod, handleRazorpayPayment, handleCODPayment]);
 
   // Render step content
-  const renderStepContent = (step) => {
+  const renderStepContent = useCallback((step) => {
     switch (step) {
       case 0:
         return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+          <Box sx={styles.formSection}>
+            <Typography variant="h6" sx={styles.sectionTitle}>
+              <LocationOn sx={{ color: '#000000' }} />
               Shipping Information
             </Typography>
-            <Grid container spacing={2}>
+            
+            <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   required
@@ -399,7 +843,14 @@ export default function CheckoutPage() {
                   label="First Name"
                   value={shippingInfo.firstName}
                   onChange={(e) => handleShippingChange('firstName', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -409,18 +860,32 @@ export default function CheckoutPage() {
                   label="Last Name"
                   value={shippingInfo.lastName}
                   onChange={(e) => handleShippingChange('lastName', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Person sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   required
                   fullWidth
-                  label="Email"
+                  label="Email Address"
                   type="email"
                   value={shippingInfo.email}
                   onChange={(e) => handleShippingChange('email', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Email sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -431,7 +896,14 @@ export default function CheckoutPage() {
                   value={shippingInfo.phone}
                   onChange={(e) => handleShippingChange('phone', e.target.value)}
                   placeholder="10-digit mobile number"
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Phone sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -443,7 +915,14 @@ export default function CheckoutPage() {
                   rows={2}
                   value={shippingInfo.address}
                   onChange={(e) => handleShippingChange('address', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Home sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -453,7 +932,7 @@ export default function CheckoutPage() {
                   label="City"
                   value={shippingInfo.city}
                   onChange={(e) => handleShippingChange('city', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -463,7 +942,7 @@ export default function CheckoutPage() {
                   label="State"
                   value={shippingInfo.state}
                   onChange={(e) => handleShippingChange('state', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -473,7 +952,7 @@ export default function CheckoutPage() {
                   label="ZIP / Postal Code"
                   value={shippingInfo.zipCode}
                   onChange={(e) => handleShippingChange('zipCode', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -483,7 +962,32 @@ export default function CheckoutPage() {
                   label="Country"
                   value={shippingInfo.country}
                   onChange={(e) => handleShippingChange('country', e.target.value)}
-                  sx={textFieldStyle}
+                  sx={styles.textField}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Business sx={{ color: '#000000' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={shippingInfo.saveAddress}
+                      onChange={(e) => handleShippingChange('saveAddress', e.target.checked)}
+                      sx={{
+                        color: '#666666',
+                        '&.Mui-checked': {
+                          color: '#000000',
+                        },
+                      }}
+                    />
+                  }
+                  label="Save this address for future orders"
+                  sx={{ color: '#666666' }}
                 />
               </Grid>
             </Grid>
@@ -492,165 +996,419 @@ export default function CheckoutPage() {
 
       case 1:
         return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+          <Box sx={styles.formSection}>
+            <Typography variant="h6" sx={styles.sectionTitle}>
+              <CreditCard sx={{ color: '#000000' }} />
               Select Payment Method
             </Typography>
+            
             <FormControl component="fieldset" sx={{ width: '100%' }}>
-              <FormLabel component="legend" sx={{ color: 'white', mb: 2 }}>
+              <FormLabel component="legend" sx={{ color: '#666666', mb: 3, fontSize: '1.1rem' }}>
                 Choose how you want to pay
               </FormLabel>
-              <RadioGroup
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <Paper sx={{ p: 2, mb: 2, background: 'rgba(255,255,255,0.05)' }}>
+              <RadioGroup value={paymentMethod} onChange={(e) => handlePaymentMethodChange(e.target.value)}>
+                <Paper 
+                  sx={{
+                    ...styles.paymentMethodCard,
+                    ...(paymentMethod === 'razorpay' ? { borderColor: '#000000', background: '#FAFAFA' } : {}),
+                  }}
+                >
                   <FormControlLabel
                     value="razorpay"
-                    control={<Radio sx={{ color: 'white' }} />}
+                    control={<Radio sx={{ color: '#000000' }} />}
                     label={
-                      <Box>
-                        <Typography sx={{ color: 'white', fontWeight: 'bold' }}>
-                          💳 Credit/Debit Card & UPI
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#d1d5db' }}>
-                          Secure payment with Razorpay
-                        </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <CreditCard sx={styles.paymentIcon} />
+                        <Box>
+                          <Typography sx={{ color: '#000000', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            Credit/Debit Card & UPI
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666666' }}>
+                            Secure payment with Razorpay
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                            <Chip label="Visa" size="small" variant="outlined" sx={{ color: '#000000', borderColor: '#000000' }} />
+                            <Chip label="Mastercard" size="small" variant="outlined" sx={{ color: '#000000', borderColor: '#000000' }} />
+                            <Chip label="UPI" size="small" variant="outlined" sx={{ color: '#000000', borderColor: '#000000' }} />
+                          </Box>
+                          <Typography variant="caption" sx={{ color: '#666666', display: 'block', mt: 1 }}>
+                            Test Card: 4111 1111 1111 1111
+                          </Typography>
+                        </Box>
                       </Box>
                     }
                   />
                 </Paper>
-                <Paper sx={{ p: 2, background: 'rgba(255,255,255,0.05)' }}>
+                
+                <Paper 
+                  sx={{
+                    ...styles.paymentMethodCard,
+                    ...(paymentMethod === 'cod' ? { borderColor: '#000000', background: '#FAFAFA' } : {}),
+                  }}
+                >
                   <FormControlLabel
                     value="cod"
-                    control={<Radio sx={{ color: 'white' }} />}
+                    control={<Radio sx={{ color: '#000000' }} />}
                     label={
-                      <Box>
-                        <Typography sx={{ color: 'white', fontWeight: 'bold' }}>
-                          📦 Cash on Delivery
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#d1d5db' }}>
-                          Pay when you receive your order
-                        </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Money sx={styles.paymentIcon} />
+                        <Box>
+                          <Typography sx={{ color: '#000000', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                            Cash on Delivery
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666666' }}>
+                            Pay when you receive your order
+                          </Typography>
+                          <Chip 
+                            label="No extra charges" 
+                            size="small" 
+                            variant="outlined" 
+                            sx={{ color: '#000000', borderColor: '#000000', mt: 1 }} 
+                          />
+                        </Box>
                       </Box>
                     }
                   />
                 </Paper>
               </RadioGroup>
             </FormControl>
+
+            {/* Payment Security Info */}
+            <Box sx={{ mt: 4 }}>
+              <Accordion sx={styles.accordion}>
+                <AccordionSummary expandIcon={<ExpandMore sx={{ color: '#000000' }} />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Security sx={{ color: '#000000' }} />
+                    <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                      Payment Security
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckCircle sx={{ color: '#000000' }} />
+                      </ListItemIcon>
+                      <ListItemText primary="SSL Encrypted Transactions" sx={{ color: '#666666' }} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckCircle sx={{ color: '#000000' }} />
+                      </ListItemIcon>
+                      <ListItemText primary="PCI DSS Compliant" sx={{ color: '#666666' }} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckCircle sx={{ color: '#000000' }} />
+                      </ListItemIcon>
+                      <ListItemText primary="No card details stored" sx={{ color: '#666666' }} />
+                    </ListItem>
+                  </List>
+                </AccordionDetails>
+              </Accordion>
+            </Box>
           </Box>
         );
 
       case 2:
         return (
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+          <Box sx={styles.formSection}>
+            <Typography variant="h6" sx={styles.sectionTitle}>
+              <CheckCircle sx={{ color: '#000000' }} />
               Review Your Order
             </Typography>
             
-            {/* Order Summary */}
-            <Paper sx={{ p: 3, mb: 3, background: 'rgba(255,255,255,0.05)' }}>
-              <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                Order Items
-              </Typography>
-              {itemsToShow.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <img 
-                      src={item.image_url || "https://via.placeholder.com/60x60?text=No+Image"} 
+            {/* Order Items */}
+            <Card sx={{ mb: 3, background: '#FAFAFA' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#000000', mb: 2, fontWeight: 600 }}>
+                  Order Items ({itemsToShow.length})
+                </Typography>
+                {itemsToShow.map((item, index) => (
+                  <Box key={index} sx={styles.orderItem}>
+                    <CardMedia
+                      component="img"
+                      image={item.image_url || item.images?.[0] || "https://via.placeholder.com/60x60?text=No+Image"}
                       alt={item.name}
-                      style={{ width: 60, height: 60, borderRadius: 8, objectFit: 'cover' }}
+                      sx={styles.itemImage}
                     />
-                    <Box>
-                      <Typography sx={{ color: 'white', fontWeight: 'bold' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ color: '#000000', fontWeight: 'bold', mb: 0.5 }}>
                         {item.name}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#d1d5db' }}>
-                        Qty: {item.quantity || 1}
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ color: '#666666' }}>
+                          Qty: {item.quantity || 1}
+                        </Typography>
+                        {item.discount > 0 && (
+                          <Chip 
+                            label={`${item.discount}% OFF`} 
+                            size="small" 
+                            sx={styles.chip} 
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography sx={{ color: '#000000', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                        ₹{(item.price * (item.quantity || 1)).toFixed(2)}
                       </Typography>
+                      {item.originalPrice && (
+                        <Typography variant="body2" sx={{ color: '#999999', textDecoration: 'line-through' }}>
+                          ₹{(item.originalPrice * (item.quantity || 1)).toFixed(2)}
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
-                  <Typography sx={{ color: 'white', fontWeight: 'bold' }}>
-                    ₹{(item.price * (item.quantity || 1)).toFixed(2)}
-                  </Typography>
-                </Box>
-              ))}
-            </Paper>
+                ))}
+              </CardContent>
+            </Card>
 
             {/* Shipping Information */}
-            <Paper sx={{ p: 3, mb: 3, background: 'rgba(255,255,255,0.05)' }}>
-              <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                Shipping Address
-              </Typography>
-              <Typography sx={{ color: 'white' }}>
-                {shippingInfo.firstName} {shippingInfo.lastName}
-              </Typography>
-              <Typography sx={{ color: '#d1d5db' }}>
-                {shippingInfo.address}
-              </Typography>
-              <Typography sx={{ color: '#d1d5db' }}>
-                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
-              </Typography>
-              <Typography sx={{ color: '#d1d5db' }}>
-                {shippingInfo.country}
-              </Typography>
-              <Typography sx={{ color: '#d1d5db' }}>
-                📞 {shippingInfo.phone}
-              </Typography>
-              <Typography sx={{ color: '#d1d5db' }}>
-                ✉️ {shippingInfo.email}
-              </Typography>
-            </Paper>
+            <Card sx={{ mb: 3, background: '#FAFAFA' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#000000', mb: 2, fontWeight: 600 }}>
+                  Shipping Address
+                </Typography>
+                <Box sx={{ color: '#000000' }}>
+                  <Typography sx={{ fontWeight: 'bold', mb: 1 }}>
+                    {shippingInfo.firstName} {shippingInfo.lastName}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    {shippingInfo.address}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    {shippingInfo.country}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                    <Chip 
+                      icon={<Phone />} 
+                      label={shippingInfo.phone} 
+                      variant="outlined" 
+                      sx={{ color: '#000000', borderColor: '#000000' }} 
+                    />
+                    <Chip 
+                      icon={<Email />} 
+                      label={shippingInfo.email} 
+                      variant="outlined" 
+                      sx={{ color: '#000000', borderColor: '#000000' }} 
+                    />
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
 
             {/* Payment Method */}
-            <Paper sx={{ p: 3, background: 'rgba(255,255,255,0.05)' }}>
-              <Typography variant="h6" sx={{ color: 'white', mb: 2 }}>
-                Payment Method
-              </Typography>
-              <Typography sx={{ color: 'white' }}>
-                {paymentMethod === 'razorpay' ? '💳 Credit/Debit Card & UPI' : '📦 Cash on Delivery'}
-              </Typography>
-            </Paper>
+            <Card sx={{ mb: 3, background: '#FAFAFA' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#000000', mb: 2, fontWeight: 600 }}>
+                  Payment Method
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {paymentMethod === 'razorpay' ? (
+                    <>
+                      <CreditCard sx={{ color: '#000000', fontSize: 32 }} />
+                      <Box>
+                        <Typography sx={{ color: '#000000', fontWeight: 'bold' }}>
+                          Credit/Debit Card & UPI
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#666666' }}>
+                          Secure payment with Razorpay
+                        </Typography>
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <Money sx={{ color: '#000000', fontSize: 32 }} />
+                      <Box>
+                        <Typography sx={{ color: '#000000', fontWeight: 'bold' }}>
+                          Cash on Delivery
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#666666' }}>
+                          Pay when you receive your order
+                        </Typography>
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Final Order Summary */}
+            <Card sx={{ background: '#FAFAFA' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: '#000000', mb: 2, fontWeight: 600 }}>
+                  Order Summary
+                </Typography>
+                <Box sx={styles.priceBreakdown}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#666666' }}>
+                      Subtotal
+                    </Typography>
+                    <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                      ₹{subtotal.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#666666' }}>
+                      Shipping
+                    </Typography>
+                    <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                      {shippingFee === 0 ? (
+                        <Chip label="FREE" size="small" sx={{ background: '#000000', color: '#FFFFFF' }} />
+                      ) : (
+                        `₹${shippingFee.toFixed(2)}`
+                      )}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#666666' }}>
+                      GST (18%)
+                    </Typography>
+                    <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                      ₹{tax.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ my: 2, borderColor: '#EEEEEE' }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="h6" sx={{ color: '#000000', fontWeight: 'bold' }}>
+                      Total
+                    </Typography>
+                    <Typography variant="h6" sx={styles.totalAmount}>
+                      ₹{totalAmount.toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Trust Badges */}
+            <Box sx={{ mt: 4 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={styles.trustBadge}>
+                    <Security sx={{ color: '#000000', fontSize: 24, mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: '#000000', fontWeight: 600 }}>
+                      Secure Payment
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={styles.trustBadge}>
+                    <LocalShipping sx={{ color: '#000000', fontSize: 24, mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: '#000000', fontWeight: 600 }}>
+                      Fast Delivery
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Box sx={styles.trustBadge}>
+                    <VerifiedUser sx={{ color: '#000000', fontSize: 24, mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: '#000000', fontWeight: 600 }}>
+                      Quality Guarantee
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
           </Box>
         );
 
       default:
         return null;
     }
-  };
+  }, [shippingInfo, paymentMethod, itemsToShow, subtotal, shippingFee, tax, totalAmount, handleShippingChange, handlePaymentMethodChange]);
 
+  // Handle empty cart
   if (!session) {
     return (
-      <Box sx={pageStyle}>
-        <Typography variant="h6" sx={{ color: 'white', textAlign: 'center' }}>
-          Please sign in to continue with checkout
-        </Typography>
+      <Box sx={styles.root}>
+        <Container sx={styles.container}>
+          <Box sx={{ textAlign: 'center', py: 10 }}>
+            <Warning sx={{ fontSize: 80, color: '#000000', opacity: 0.5, mb: 3 }} />
+            <Typography variant="h4" sx={{ color: '#000000', mb: 2 }}>
+              Please Sign In
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#666666', mb: 4 }}>
+              Please sign in to continue with checkout
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate("/login", { state: { returnTo: '/checkout' } })}
+              sx={styles.primaryButton}
+            >
+              Sign In to Continue
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
+
+  if (itemsToShow.length === 0) {
+    return (
+      <Box sx={styles.root}>
+        <Container sx={styles.container}>
+          <Box sx={styles.emptyCart}>
+            <ShoppingBag sx={{ fontSize: 80, color: '#000000', opacity: 0.3, mb: 3 }} />
+            <Typography variant="h4" sx={{ color: '#000000', mb: 2 }}>
+              Your cart is empty
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#666666', mb: 4 }}>
+              Discover our collection of premium fashion
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => navigate("/products")}
+              sx={styles.primaryButton}
+            >
+              Start Shopping
+            </Button>
+          </Box>
+        </Container>
       </Box>
     );
   }
 
   return (
-    <Box sx={pageStyle}>
-      <Box sx={containerStyle}>
+    <Box sx={styles.root}>
+      {/* Floating decorative elements */}
+      <Box sx={styles.floatingElement1} />
+      <Box sx={styles.floatingElement2} />
+
+      <Container sx={styles.container}>
         {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h3" sx={titleStyle}>
-            Checkout
+        <Box sx={styles.header}>
+          <Typography variant="h3" sx={styles.title}>
+            Secure Checkout
           </Typography>
-          <Typography variant="body1" sx={{ color: '#d1d5db' }}>
+          <Typography variant="body1" sx={styles.subtitle}>
             Complete your purchase in just a few steps
           </Typography>
+          
+          {/* Progress Bar */}
+          <Box sx={{ maxWidth: 600, mx: 'auto', mt: 3 }}>
+            <Box sx={{ ...styles.progressIndicator, width: `${progress}%` }} />
+          </Box>
         </Box>
 
         <Grid container spacing={4}>
           {/* Left Column - Checkout Steps */}
           <Grid item xs={12} lg={8}>
-            <Paper sx={paperStyle}>
+            <Paper sx={styles.paper}>
               {/* Stepper */}
-              <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                {steps.map((label) => (
+              <Stepper activeStep={activeStep} sx={styles.stepper}>
+                {steps.map((label, index) => (
                   <Step key={label}>
-                    <StepLabel sx={{ '& .MuiStepLabel-label': { color: 'white' } }}>
+                    <StepLabel 
+                      StepIconProps={{
+                        sx: styles.stepIcon,
+                      }}
+                    >
                       {label}
                     </StepLabel>
                   </Step>
@@ -660,23 +1418,13 @@ export default function CheckoutPage() {
               {/* Step Content */}
               {renderStepContent(activeStep)}
 
-              {/* Message Alert */}
-              {message.text && (
-                <Alert 
-                  severity={message.type === 'error' ? 'error' : message.type === 'success' ? 'success' : 'info'} 
-                  sx={{ mt: 2 }}
-                >
-                  {message.text}
-                </Alert>
-              )}
-
               {/* Navigation Buttons */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
                 <Button
-                  disabled={activeStep === 0 || loading}
+                  disabled={activeStep === 0 || loading || paymentProcessing}
                   onClick={handleBack}
                   startIcon={<ArrowBack />}
-                  sx={buttonStyle}
+                  sx={styles.secondaryButton}
                 >
                   Back
                 </Button>
@@ -686,16 +1434,17 @@ export default function CheckoutPage() {
                     <Button
                       variant="contained"
                       onClick={handlePlaceOrder}
-                      disabled={loading}
-                      sx={{ ...buttonStyle, background: 'linear-gradient(45deg, #22c55e, #3b82f6)' }}
+                      disabled={loading || paymentProcessing}
+                      startIcon={paymentProcessing ? <CircularProgress size={20} /> : <Payment />}
+                      sx={styles.primaryButton}
                     >
-                      {loading ? 'Processing...' : `Place Order - ₹${totalAmount.toFixed(2)}`}
+                      {paymentProcessing ? 'Processing...' : `Place Order - ₹${totalAmount.toFixed(2)}`}
                     </Button>
                   ) : (
                     <Button
                       variant="contained"
                       onClick={handleNext}
-                      sx={{ ...buttonStyle, background: 'linear-gradient(45deg, #22c55e, #3b82f6)' }}
+                      sx={styles.primaryButton}
                     >
                       Continue to {steps[activeStep + 1]}
                     </Button>
@@ -707,131 +1456,205 @@ export default function CheckoutPage() {
 
           {/* Right Column - Order Summary */}
           <Grid item xs={12} lg={4}>
-            <Paper sx={paperStyle}>
-              <Typography variant="h6" sx={{ color: 'white', mb: 3, fontWeight: 'bold' }}>
+            <Paper sx={styles.orderSummary}>
+              <Typography variant="h6" sx={{ color: '#000000', mb: 3, fontWeight: 'bold', fontSize: '1.3rem' }}>
                 Order Summary
               </Typography>
 
               {/* Order Items */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 3, maxHeight: 300, overflowY: 'auto' }}>
                 {itemsToShow.map((item, index) => (
-                  <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <img 
-                        src={item.image_url || "https://via.placeholder.com/40x40?text=No+Image"} 
+                  <Box key={index} sx={styles.orderItem}>
+                    <Badge 
+                      badgeContent={item.quantity || 1} 
+                      color="primary"
+                      sx={styles.badge}
+                    >
+                      <CardMedia
+                        component="img"
+                        image={item.image_url || item.images?.[0] || "https://via.placeholder.com/40x40?text=Product"}
                         alt={item.name}
-                        style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover' }}
+                        sx={styles.itemImage}
                       />
-                      <Box>
-                        <Typography variant="body2" sx={{ color: 'white', fontWeight: 'bold' }}>
-                          {item.name}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#d1d5db' }}>
-                          Qty: {item.quantity || 1}
-                        </Typography>
-                      </Box>
+                    </Badge>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#000000', fontWeight: 'bold', mb: 0.5 }}>
+                        {item.name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666666' }}>
+                        {item.brand || 'Premium Brand'}
+                      </Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ color: 'white', fontWeight: 'bold' }}>
+                    <Typography variant="body2" sx={{ color: '#000000', fontWeight: 'bold' }}>
                       ₹{(item.price * (item.quantity || 1)).toFixed(2)}
                     </Typography>
                   </Box>
                 ))}
               </Box>
 
-              <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 2 }} />
+              <Divider sx={{ borderColor: '#EEEEEE', my: 2 }} />
 
               {/* Price Breakdown */}
-              <Box sx={{ space: 1 }}>
+              <Box sx={styles.priceBreakdown}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#d1d5db' }}>Subtotal</Typography>
-                  <Typography variant="body2" sx={{ color: 'white' }}>₹{subtotal.toFixed(2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#d1d5db' }}>Shipping</Typography>
-                  <Typography variant="body2" sx={{ color: 'white' }}>
-                    {shippingFee === 0 ? 'FREE' : `₹${shippingFee.toFixed(2)}`}
+                  <Typography variant="body2" sx={{ color: '#666666' }}>
+                    Subtotal
+                  </Typography>
+                  <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                    ₹{subtotal.toFixed(2)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#d1d5db' }}>Tax (18% GST)</Typography>
-                  <Typography variant="body2" sx={{ color: 'white' }}>₹{tax.toFixed(2)}</Typography>
+                  <Typography variant="body2" sx={{ color: '#666666' }}>
+                    Shipping
+                  </Typography>
+                  <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                    {shippingFee === 0 ? (
+                      <Chip label="FREE" size="small" sx={{ background: '#000000', color: '#FFFFFF', fontWeight: 600 }} />
+                    ) : (
+                      `₹${shippingFee.toFixed(2)}`
+                    )}
+                  </Typography>
                 </Box>
-                <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>Total</Typography>
-                  <Typography variant="h6" sx={{ color: '#22c55e', fontWeight: 'bold' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#666666' }}>
+                    GST (18%)
+                  </Typography>
+                  <Typography sx={{ color: '#000000', fontWeight: 600 }}>
+                    ₹{tax.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Divider sx={{ borderColor: '#EEEEEE', my: 2 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="h6" sx={{ color: '#000000', fontWeight: 'bold' }}>
+                    Total
+                  </Typography>
+                  <Typography variant="h6" sx={styles.totalAmount}>
                     ₹{totalAmount.toFixed(2)}
+                    <Typography variant="caption" sx={{ color: '#666666', ml: 1 }}>
+                      (including all taxes)
+                    </Typography>
                   </Typography>
                 </Box>
               </Box>
 
               {/* Free Shipping Notice */}
               {subtotal < 999 && (
-                <Alert severity="info" sx={{ mt: 2, background: 'rgba(59, 130, 246, 0.1)' }}>
+                <Alert 
+                  severity="info" 
+                  sx={{ 
+                    mt: 2, 
+                    background: '#FAFAFA',
+                    border: '1px solid #E5E5E5',
+                    borderRadius: '8px',
+                    '& .MuiAlert-icon': {
+                      color: '#666666',
+                    },
+                    ...styles.alert
+                  }}
+                >
                   Add ₹{(999 - subtotal).toFixed(2)} more for FREE shipping!
                 </Alert>
               )}
+
+              {/* Trust Badges */}
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="subtitle2" sx={{ color: '#666666', mb: 2, fontWeight: 600 }}>
+                  Why shop with us?
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={styles.trustBadge}>
+                      <Lock sx={{ color: '#000000', fontSize: 24, mb: 1 }} />
+                      <Typography variant="body2" sx={{ color: '#000000', fontWeight: 600 }}>
+                        100% Secure
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={styles.trustBadge}>
+                      <Receipt sx={{ color: '#000000', fontSize: 24, mb: 1 }} />
+                      <Typography variant="body2" sx={{ color: '#000000', fontWeight: 600 }}>
+                        Easy Returns
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
             </Paper>
           </Grid>
         </Grid>
-      </Box>
+      </Container>
+
+      {/* Payment Processing Dialog */}
+      <Dialog 
+        open={paymentDialog} 
+        onClose={() => !paymentProcessing && setPaymentDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center', borderBottom: '1px solid #EEEEEE' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <CircularProgress size={40} sx={{ color: '#000000' }} />
+          </Box>
+          <Typography variant="h6" sx={{ color: '#000000', fontWeight: 600 }}>
+            Processing Payment
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', py: 4 }}>
+          <Typography sx={{ color: '#666666', mb: 2 }}>
+            Please wait while we process your payment...
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#999999' }}>
+            Do not close this window or refresh the page.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => setPaymentDialog(false)} 
+            disabled={paymentProcessing}
+            sx={styles.secondaryButton}
+          >
+            Cancel Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for messages */}
+      <Snackbar
+        open={showSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setShowSnackbar(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={styles.snackbar}
+      >
+        <Alert
+          severity={message.type}
+          onClose={() => setShowSnackbar(false)}
+          action={
+            <IconButton
+              size="small"
+              aria-label="close"
+              color="inherit"
+              onClick={() => setShowSnackbar(false)}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+          }
+          sx={styles.alert}
+        >
+          {message.text}
+        </Alert>
+      </Snackbar>
+
+      <style>
+        {`
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+          }
+        `}
+      </style>
     </Box>
   );
 }
-
-// Styles
-const pageStyle = {
-  minHeight: '100vh',
-  background: 'linear-gradient(160deg, #0a0f1f 0%, #1a273a 50%, #0a192f 100%)',
-  padding: '20px 0',
-};
-
-const containerStyle = {
-  maxWidth: '1200px',
-  margin: '0 auto',
-  padding: '0 20px',
-};
-
-const titleStyle = {
-  fontSize: '2.5rem',
-  fontWeight: 'bold',
-  background: 'linear-gradient(45deg, #22c55e, #3b82f6)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  mb: 1,
-};
-
-const paperStyle = {
-  background: 'rgba(17, 25, 40, 0.85)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: '16px',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
-  padding: '30px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-};
-
-const textFieldStyle = {
-  '& .MuiOutlinedInput-root': {
-    color: 'white',
-    '& fieldset': {
-      borderColor: 'rgba(255,255,255,0.3)',
-    },
-    '&:hover fieldset': {
-      borderColor: 'rgba(255,255,255,0.5)',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#22c55e',
-    },
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255,255,255,0.7)',
-  },
-};
-
-const buttonStyle = {
-  borderRadius: '10px',
-  padding: '12px 24px',
-  fontWeight: '600',
-  textTransform: 'none',
-  fontSize: '16px',
-};
