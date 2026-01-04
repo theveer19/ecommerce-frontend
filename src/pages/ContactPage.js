@@ -1,39 +1,17 @@
 import React, { useState } from "react";
-import { Box, Container, Grid, Typography, TextField, Button, Snackbar, Alert, MenuItem } from "@mui/material";
-import { Mail, MapPin, Phone, ArrowRight, Instagram, Facebook, Linkedin } from "lucide-react"; // Import Linkedin
+import { Box, Container, Grid, Typography, TextField, Button, Snackbar, Alert } from "@mui/material";
+import { Mail, MapPin, Phone, ArrowRight, Instagram, Facebook} from "lucide-react";
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    email: '', 
-    category: '', // New state for category
-    message: '' 
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [open, setOpen] = useState(false);
-
-  // Topics for the dropdown
-  const contactTopics = [
-    { value: 'product', label: 'Product Inquiry' },
-    { value: 'order', label: 'Order Issue' },
-    { value: 'payment', label: 'Payment / Refund' },
-    { value: 'partnership', label: 'Partnership / Collab' },
-    { value: 'other', label: 'Other' }
-  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // --- WHERE THIS DATA GOES ---
-    // Currently, this just logs to the browser console (Right-click > Inspect > Console).
-    // To make this "real", you would replace this console.log with a function to send the data.
-    // Examples:
-    // 1. Send to Supabase: await supabase.from('contact_messages').insert([formData]);
-    // 2. Send to Email Service (like EmailJS): emailjs.send('service_id', 'template_id', formData);
-    
-    console.log("Form Submitted:", formData); 
-    
+    // Simulate form submission
+    console.log("Form Submitted:", formData);
     setOpen(true);
-    setFormData({ name: '', email: '', category: '', message: '' });
+    setFormData({ name: '', email: '', message: '' });
   };
 
   const handleChange = (e) => {
@@ -60,7 +38,7 @@ export default function ContactPage() {
 
         <Grid container spacing={8}>
           
-          {/* LEFT: CONTACT INFO */}
+          {/* LEFT: CONTACT INFO (Editorial Style) */}
           <Grid item xs={12} md={5} className="animate-up delay-1">
             <Box sx={styles.infoBox}>
               <Typography sx={styles.sectionHeader}>CUSTOMER CARE</Typography>
@@ -96,14 +74,14 @@ export default function ContactPage() {
                 {/* Socials */}
                 <Box sx={{ mt: 2 }}>
                   <Typography sx={styles.contactLabel}>FOLLOW US</Typography>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
                     <Button startIcon={<Instagram size={16} />} sx={styles.socialBtn} href="https://instagram.com" target="_blank">
                       INSTAGRAM
                     </Button>
                     <Button startIcon={<Facebook size={16} />} sx={styles.socialBtn} href="https://facebook.com" target="_blank">
                       FACEBOOK
                     </Button>
-                    <Button startIcon={<Linkedin size={16} />} sx={styles.socialBtn} href="https://linkedin.com" target="_blank">
+                    <Button startIcon={<linkedin size={16} />} sx={styles.socialBtn} href="https://linkedin.com" target="_blank">
                       LINKEDIN
                     </Button>
                   </Box>
@@ -144,32 +122,6 @@ export default function ContactPage() {
                     InputProps={{ sx: styles.input }}
                   />
                 </Grid>
-
-                {/* CATEGORY SELECTOR */}
-                <Grid item xs={12}>
-                  <TextField
-                    select
-                    fullWidth
-                    label="TOPIC"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                    variant="standard"
-                    InputLabelProps={{ sx: styles.inputLabel }}
-                    InputProps={{ sx: styles.input }}
-                    SelectProps={{
-                       MenuProps: { PaperProps: { sx: { borderRadius: 0 } } } // Sharp corners
-                    }}
-                  >
-                    {contactTopics.map((option) => (
-                      <MenuItem key={option.value} value={option.value} sx={{ fontSize: '13px', fontWeight: 500 }}>
-                        {option.label.toUpperCase()}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
