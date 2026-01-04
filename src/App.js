@@ -14,6 +14,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalStyles from "./components/GlobalStyles";
 import { supabase } from "./supabase/supabaseClient";
 import ScrollToTop from "./components/ScrollToTop";
+
 // --- CONTEXTS ---
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
@@ -30,7 +31,7 @@ const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
-const ContactPage = lazy(() => import("./pages/ContactPage")); // <--- ADDED IMPORT
+const ContactPage = lazy(() => import("./pages/ContactPage")); // ✅ IMPORTED CONTACT PAGE
 
 // Admin Pages
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -152,13 +153,26 @@ function App() {
   useEffect(() => {
     let mounted = true;
 
-    // 🔥 SAFETY TIMEOUT (prevents infinite loading)
+    // 🔥 SAFETY TIMEOUT
     const loadingTimeout = setTimeout(() => {
-      console.warn("Loading timeout reached. Forcing app render.");
       if (mounted) {
+        console.warn("Loading timeout reached. Forcing app render.");
         setLoading(false);
       }
-    }, 5000); // 5 seconds max
+    }, 5000); 
+
+    // --- 📱 MOBILE BACK BUTTON FIX START ---
+    const handleBackButton = (event) => {
+      // If user tries to go back from home page, push state to keep them there
+      if (window.location.pathname === '/') {
+        window.history.pushState(null, "", window.location.pathname);
+      }
+    };
+
+    // Initialize history state and add listener
+    window.history.pushState(null, "", window.location.pathname);
+    window.addEventListener('popstate', handleBackButton);
+    // --- 📱 MOBILE BACK BUTTON FIX END ---
 
     const initAuth = async () => {
       try {
@@ -197,6 +211,7 @@ function App() {
       mounted = false;
       clearTimeout(loadingTimeout);
       if (subscription) subscription.unsubscribe();
+      window.removeEventListener('popstate', handleBackButton); // Cleanup listener
     };
   }, []);
 
