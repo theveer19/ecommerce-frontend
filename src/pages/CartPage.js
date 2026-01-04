@@ -13,7 +13,9 @@ import {
   Grid,
   IconButton,
   TextField,
-  Avatar
+  Avatar,
+  useTheme,
+  useMediaQuery
 } from "@mui/material";
 import { Delete, ShoppingCart, Login, ArrowBack, Add, Remove, Home, Inventory2 } from "@mui/icons-material";
 
@@ -23,6 +25,10 @@ export default function CartPage({ session }) {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const navigate = useNavigate();
+
+  // Media query for mobile responsiveness checks
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleCheckout = () => {
     if (!session) {
@@ -69,34 +75,32 @@ export default function CartPage({ session }) {
   // --- STYLES FOR 3D EFFECT (BLACK & WHITE THEME) ---
   const styles = {
     pageBackground: {
-      background: '#ffffff', // Pure white background
+      background: '#ffffff',
       minHeight: '100vh',
-      color: '#000000', // Black text default
+      color: '#000000',
       pb: 8
     },
     glassCard: {
-      background: '#ffffff', // Solid white cards
-      // backdropFilter: 'blur(20px)', // Removed blur for clean B&W
+      background: '#ffffff',
       borderRadius: '24px',
-      border: '2px solid #000000', // bold black border
-      boxShadow: '0 10px 30px -12px rgba(0, 0, 0, 0.3)', // softer gray shadow
+      border: '2px solid #000000',
+      boxShadow: '0 10px 30px -12px rgba(0, 0, 0, 0.3)',
       overflow: 'hidden',
       transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease',
       '&:hover': {
-        transform: 'translateY(-8px) scale(1.01)',
+        transform: isMobile ? 'none' : 'translateY(-8px) scale(1.01)', // Disable hover lift on mobile
         boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5)',
-        // border: '2px solid #000000', 
       }
     },
     img3D: {
-      transform: 'perspective(1000px) rotateY(-10deg)',
-      boxShadow: '15px 15px 30px rgba(0,0,0,0.3)', // Softer shadow
+      // Less extreme 3D effect on mobile for better visibility
+      transform: isMobile ? 'none' : 'perspective(1000px) rotateY(-10deg)',
+      boxShadow: '15px 15px 30px rgba(0,0,0,0.3)',
       borderRadius: '16px',
       transition: 'all 0.5s ease',
-      border: '1px solid #eee' // Light gray border
+      border: '1px solid #eee'
     },
     neonText: {
-      // Removed gradient, just solid black
       color: '#000000',
       fontWeight: 900,
       letterSpacing: '1px',
@@ -107,7 +111,9 @@ export default function CartPage({ session }) {
     return (
       <Box sx={styles.pageBackground}>
         <Container maxWidth="lg" sx={{ 
-          py: 8, 
+          // ✅ FIX: Added padding top to clear the Navbar
+          pt: { xs: 15, md: 18 }, 
+          pb: 8, 
           textAlign: 'center',
           minHeight: '80vh',
           display: 'flex',
@@ -123,20 +129,24 @@ export default function CartPage({ session }) {
               position: 'absolute',
               top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               width: '200px', height: '200px',
-              background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 70%)', // subtly gray radial
+              background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 70%)',
               zIndex: 0
             }} />
             <ShoppingCart sx={{ 
-              fontSize: 120, 
-              color: '#000000', // Black icon
+              fontSize: { xs: 80, md: 120 }, // Responsive icon size
+              color: '#000000',
               mb: 3,
               position: 'relative',
               zIndex: 1,
-              filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.2))' // Gray shadow
+              filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.2))'
             }} />
           </Box>
           
-          <Typography variant="h3" sx={{ ...styles.neonText, mb: 2 }}>
+          <Typography variant="h3" sx={{ 
+            ...styles.neonText, 
+            mb: 2, 
+            fontSize: { xs: '1.8rem', md: '3rem' } // Responsive Font
+          }}>
             VOID DETECTED
           </Typography>
           <Typography variant="body1" sx={{ 
@@ -152,14 +162,14 @@ export default function CartPage({ session }) {
             onClick={() => navigate('/products')}
             startIcon={<Home />}
             sx={{ 
-              bgcolor: '#000000', // Black button
-              color: '#ffffff', // White text
+              bgcolor: '#000000',
+              color: '#ffffff',
               px: 6,
               py: 2,
               borderRadius: '50px',
               fontSize: '1rem',
               fontWeight: 900,
-              boxShadow: '0 0 30px rgba(0,0,0,0.2)', // Gray shadow
+              boxShadow: '0 0 30px rgba(0,0,0,0.2)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 bgcolor: '#333333',
@@ -187,32 +197,33 @@ export default function CartPage({ session }) {
 
   return (
     <Box sx={styles.pageBackground}>
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+      {/* ✅ FIX: Added padding top (pt) to push content below fixed Navbar */}
+      <Container maxWidth="lg" sx={{ pt: { xs: 14, md: 18 }, pb: 6 }}>
+        
         {/* HEADER 3D */}
         <Box sx={{ textAlign: 'center', mb: 6, position: 'relative' }}>
           <Typography variant="h2" sx={{ 
             fontWeight: 900, 
-            color: '#000000', // Black text
+            color: '#000000',
             textTransform: 'uppercase',
-            letterSpacing: '4px',
-            // Removed colored text shadow
+            letterSpacing: { xs: '2px', md: '4px' },
+            fontSize: { xs: '2rem', md: '3.75rem' } // Responsive Header
           }}>
             Inventory <span style={{ color: '#999' }}>//</span> Cart
           </Typography>
           <Box sx={{ 
             width: '100px', 
             height: '4px', 
-            background: '#000000', // Black line
+            background: '#000000',
             margin: '20px auto',
             borderRadius: '2px',
-            // Removed colored box shadow
           }} />
         </Box>
 
         {!session && (
           <Alert 
             severity="warning" 
-            variant="outlined" // Outlined for B&W theme
+            variant="outlined"
             sx={{ 
               mb: 4,
               borderRadius: '12px',
@@ -237,7 +248,7 @@ export default function CartPage({ session }) {
           <Grid item xs={12} lg={8}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
               <Inventory2 sx={{ color: '#000' }} />
-              <Typography variant="h6" sx={{ color: '#666', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>
+              <Typography variant="h6" sx={{ color: '#666', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Assets Loaded: {totalItems}
               </Typography>
             </Box>
@@ -247,7 +258,7 @@ export default function CartPage({ session }) {
                 key={`${item.id}-${item.quantity}`} 
                 sx={{
                   ...styles.glassCard,
-                  p: 3,
+                  p: { xs: 2, md: 3 }, // Less padding on mobile
                   mb: 3,
                   position: 'relative',
                   animation: `slideUp 0.5s ease forwards ${index * 0.1}s`,
@@ -256,19 +267,19 @@ export default function CartPage({ session }) {
                 }}
               >
                 <Grid container spacing={3} alignItems="center">
-                  {/* 3D Image Container */}
+                  {/* Image Container */}
                   <Grid item xs={12} sm={4} md={3}>
                     <Box sx={{ 
                       perspective: '1000px',
-                      '&:hover img': {
-                        transform: 'rotateY(0deg) scale(1.1)',
-                      }
+                      display: 'flex',
+                      justifyContent: 'center'
                     }}>
                       <img
                         src={item.image_url || 'https://via.placeholder.com/200x200?text=No+Image'}
                         alt={item.name}
                         style={{ 
-                          width: '100%',
+                          width: isMobile ? '100%' : '100%',
+                          maxWidth: isMobile ? '200px' : 'none',
                           height: '160px',
                           objectFit: 'cover',
                           ...styles.img3D
@@ -279,12 +290,13 @@ export default function CartPage({ session }) {
                   
                   <Grid item xs={12} sm={8} md={9}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                      <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
                         <Typography variant="h5" sx={{ 
                           fontWeight: 800, 
-                          color: '#000000', // Black text
+                          color: '#000000',
                           mb: 1,
-                          letterSpacing: '0.5px'
+                          letterSpacing: '0.5px',
+                          fontSize: { xs: '1.25rem', md: '1.5rem' }
                         }}>
                           {item.name}
                         </Typography>
@@ -294,7 +306,7 @@ export default function CartPage({ session }) {
                             display: 'inline-block',
                             px: 1.5, py: 0.5, 
                             borderRadius: '4px', 
-                            background: '#f5f5f5', // Light gray background
+                            background: '#f5f5f5',
                             mb: 2,
                             border: '1px solid #e0e0e0'
                           }}>
@@ -312,10 +324,12 @@ export default function CartPage({ session }) {
                       {/* Controls */}
                       <Box sx={{ 
                         display: 'flex', 
+                        flexDirection: { xs: 'column', sm: 'row' },
                         alignItems: 'center', 
                         justifyContent: 'space-between',
+                        gap: 2,
                         mt: 'auto',
-                        background: '#f9f9f9', // Very light gray
+                        background: '#f9f9f9',
                         borderRadius: '12px',
                         p: 1.5,
                         border: '2px solid #eee'
@@ -348,20 +362,22 @@ export default function CartPage({ session }) {
                           </IconButton>
                         </Box>
                         
-                        <Typography variant="h6" sx={{ color: '#000', fontWeight: 'bold' }}>
-                          ₹{calculateSubtotal(item.price, item.quantity).toFixed(2)}
-                        </Typography>
-                        
-                        <IconButton
-                          onClick={() => handleRemoveItem(item.id)}
-                          sx={{ 
-                            color: '#000', // Black delete icon
-                            opacity: 0.7,
-                            '&:hover': { opacity: 1, background: '#eee' }
-                          }}
-                        >
-                          <Delete />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'space-between', sm: 'flex-end' } }}>
+                            <Typography variant="h6" sx={{ color: '#000', fontWeight: 'bold' }}>
+                            ₹{calculateSubtotal(item.price, item.quantity).toFixed(2)}
+                            </Typography>
+                            
+                            <IconButton
+                            onClick={() => handleRemoveItem(item.id)}
+                            sx={{ 
+                                color: '#000',
+                                opacity: 0.7,
+                                '&:hover': { opacity: 1, background: '#eee' }
+                            }}
+                            >
+                            <Delete />
+                            </IconButton>
+                        </Box>
                       </Box>
                     </Box>
                   </Grid>
@@ -369,16 +385,18 @@ export default function CartPage({ session }) {
               </Paper>
             ))}
 
-            <Box sx={{ display: 'flex', gap: 2, mt: 4, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 4 }}>
               <Button
                 component={Link}
                 to="/products"
                 startIcon={<ArrowBack />}
+                fullWidth={isMobile}
                 sx={{ 
                   color: 'black',
                   borderColor: 'black',
                   borderRadius: '30px',
                   px: 3,
+                  py: 1.5,
                   '&:hover': { color: 'white', borderColor: 'black', background: 'black' }
                 }}
                 variant="outlined"
@@ -388,9 +406,9 @@ export default function CartPage({ session }) {
               
               <Button
                 variant="text"
-                // color="error" // Removed error color for B&W
                 onClick={handleClearCart}
-                sx={{ ml: 'auto', opacity: 0.6, color: 'black', '&:hover': { opacity: 1, background: '#eee' } }}
+                fullWidth={isMobile}
+                sx={{ ml: { sm: 'auto' }, opacity: 0.6, color: 'black', '&:hover': { opacity: 1, background: '#eee' } }}
               >
                 Empty Cart
               </Button>
@@ -402,9 +420,10 @@ export default function CartPage({ session }) {
             <Paper sx={{ 
               ...styles.glassCard,
               p: 4, 
-              position: 'sticky', 
-              top: '100px',
-              // background: 'linear-gradient(160deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.4) 100%)' // Removed gradient
+              // ✅ FIX: Sticky on Desktop, Static on Mobile to avoid overlapping
+              position: { xs: 'static', lg: 'sticky' }, 
+              top: '120px',
+              mb: { xs: 4, lg: 0 }
             }}>
               <Typography variant="h5" sx={{ ...styles.neonText, mb: 4, textAlign: 'center' }}>
                 TRANSACTION SUMMARY
@@ -454,8 +473,8 @@ export default function CartPage({ session }) {
                 startIcon={!session ? <Login /> : <Inventory2 />}
                 sx={{
                   py: 2,
-                  background: 'black', // Black button
-                  color: 'white', // White text
+                  background: 'black',
+                  color: 'white',
                   borderRadius: '12px',
                   fontWeight: 900,
                   fontSize: '1.1rem',
@@ -476,7 +495,7 @@ export default function CartPage({ session }) {
                     left: '-50%',
                     width: '200%',
                     height: '200%',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent)', // subtle gray shine
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent)',
                     transform: 'rotate(45deg)',
                     animation: 'shine 3s infinite',
                   }
@@ -502,8 +521,8 @@ export default function CartPage({ session }) {
               width: '100%', 
               borderRadius: '50px', 
               fontWeight: 'bold',
-              bgcolor: 'black', // Black snackbar bg
-              color: 'white' // White text
+              bgcolor: 'black',
+              color: 'white'
              }}
           >
             {snackbarMessage}

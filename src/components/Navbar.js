@@ -8,14 +8,13 @@ export default function Navbar({ session, onLogout, userRole }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [apparelOpen, setApparelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // NEW: Mobile State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
   const navigate = useNavigate();
   const location = useLocation();
   const { cartItems } = useCart();
 
-  // Check if we're on the homepage
   const isHomePage = location.pathname === "/";
 
   // Handle Scroll Effect
@@ -53,12 +52,10 @@ export default function Navbar({ session, onLogout, userRole }) {
     borderColor = '#f0f0f0';
   }
 
-  // Check if current user is admin
   const isAdmin = userRole === 'admin';
 
   return (
     <>
-      {/* INJECT CSS ANIMATIONS */}
       <style>
         {`
           @keyframes spin3D {
@@ -77,12 +74,17 @@ export default function Navbar({ session, onLogout, userRole }) {
           .nav-hover-underline:hover::after {
             width: 100%;
           }
+          /* 3D Click Effect for Hamburger */
+          .click-3d:active {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+          }
         `}
       </style>
 
       <header style={{
         position: 'fixed',
-        top: '35px',
+        top: 0, // ✅ Fixed: Stick to very top on mobile
         left: 0,
         right: 0,
         height: '80px',
@@ -93,22 +95,26 @@ export default function Navbar({ session, onLogout, userRole }) {
         alignItems: 'center',
         borderBottom: `1px solid ${borderColor}`,
         backdropFilter: isScrolled ? 'blur(10px)' : 'none',
+        paddingTop: isHomePage && !isScrolled ? '35px' : '0px' // Announcement bar spacing
       }}>
         <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
           
           {/* 1. LEFT: HAMBURGER (Mobile) & LOGO */}
           <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: 'auto', md: '200px' } }}>
-            {/* Mobile Menu Icon */}
+            
+            {/* ✅ DYNAMIC 3D HAMBURGER ICON */}
             <IconButton 
+              className="click-3d"
               onClick={() => setMobileMenuOpen(true)}
               sx={{ 
                 display: { xs: 'flex', md: 'none' }, 
-                color: textColor,
+                color: textColor, // Dynamic Color
                 mr: 1,
-                padding: 0
+                padding: '8px',
+                transition: 'color 0.3s ease'
               }}
             >
-              <Menu size={24} />
+              <Menu size={28} strokeWidth={2} />
             </IconButton>
 
             <Link to="/" style={styles.logo(textColor)}>
@@ -116,7 +122,7 @@ export default function Navbar({ session, onLogout, userRole }) {
             </Link>
           </Box>
 
-          {/* 2. CENTER: NAV LINKS (Hidden on Mobile) */}
+          {/* 2. CENTER: NAV LINKS (Desktop) */}
           <Box sx={{ 
             display: { xs: 'none', md: 'flex' }, 
             gap: 6, 
@@ -151,33 +157,26 @@ export default function Navbar({ session, onLogout, userRole }) {
             display: 'flex', 
             justifyContent: 'flex-end', 
             alignItems: 'center', 
-            gap: { xs: 2, md: 3 } 
+            gap: { xs: 1, md: 3 } 
           }}>
-            {/* Search Button: Text on Desktop, Icon on Mobile */}
+            {/* Search Button */}
             <button onClick={() => setSearchOpen(true)} className="nav-hover-underline" style={{ ...styles.textButton(textColor), display: 'flex', alignItems: 'center' }}>
               <span style={{ display: window.innerWidth > 900 ? 'block' : 'none' }}>SEARCH</span>
-              <Search size={20} style={{ display: window.innerWidth <= 900 ? 'block' : 'none' }} />
+              <Search size={22} style={{ display: window.innerWidth <= 900 ? 'block' : 'none', color: textColor }} />
             </button>
             
-            {/* Desktop Logic for Login/Account (Hidden on Mobile) */}
+            {/* Desktop Account Links */}
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 3 }}>
               {session ? (
                 <>
                   <Link to="/orders" className="nav-hover-underline" style={styles.textButton(textColor)}>
                     ACCOUNT
                   </Link>
-                  
                   {isAdmin && (
-                    <Link to="/admin" style={{
-                      ...styles.textButton(textColor),
-                      border: `1px solid ${textColor}`,
-                      padding: '4px 8px',
-                      marginRight: '8px'
-                    }}>
+                    <Link to="/admin" style={{ ...styles.textButton(textColor), border: `1px solid ${textColor}`, padding: '4px 8px', marginRight: '8px' }}>
                       ADMIN
                     </Link>
                   )}
-                  
                   <button onClick={onLogout} className="nav-hover-underline" style={styles.textButton(textColor)}>
                     LOGOUT
                   </button>
@@ -189,14 +188,8 @@ export default function Navbar({ session, onLogout, userRole }) {
               )}
             </Box>
 
-            {/* ROTATING CART ICON */}
-            <Link to="/cart" style={{ 
-              position: 'relative', 
-              color: '#000000', 
-              textDecoration: 'none', 
-              display: 'flex', 
-              alignItems: 'center' 
-            }}>
+            {/* Cart Icon */}
+            <Link to="/cart" style={{ position: 'relative', color: textColor, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
                <Box sx={{ 
                  position: 'relative', 
                  display: 'flex', 
@@ -204,7 +197,7 @@ export default function Navbar({ session, onLogout, userRole }) {
                  animation: 'spin3D 6s linear infinite',
                  transformStyle: 'preserve-3d'
                }}>
-                 <ShoppingBag size={20} strokeWidth={1.5} />
+                 <ShoppingBag size={22} strokeWidth={1.5} />
                </Box>
                
                {cartItems.length > 0 && (
@@ -213,9 +206,9 @@ export default function Navbar({ session, onLogout, userRole }) {
                    fontSize: '11px', 
                    fontWeight: 700,
                    position: 'absolute',
-                   right: -12,
-                   top: 0,
-                   color: '#000000'
+                   right: -10,
+                   top: -5,
+                   color: textColor
                  }}>
                    ({cartItems.length})
                  </span>
@@ -230,15 +223,28 @@ export default function Navbar({ session, onLogout, userRole }) {
         anchor="left"
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        PaperProps={{ sx: { width: '80%', maxWidth: '300px', bgcolor: 'white' } }}
+        PaperProps={{ sx: { width: '85%', maxWidth: '300px', bgcolor: 'white', zIndex: 1600 } }}
+        sx={{ zIndex: 1600 }} // ✅ Ensure Drawer is above everything
       >
         <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+          
+          {/* HEADER WITH CLOSE BUTTON */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Link to="/" style={styles.logo('#000')} onClick={() => setMobileMenuOpen(false)}>
               OneT
             </Link>
-            <IconButton onClick={() => setMobileMenuOpen(false)}>
-              <X size={24} />
+            
+            {/* ✅ FIXED CLOSE BUTTON */}
+            <IconButton 
+              onClick={() => setMobileMenuOpen(false)}
+              sx={{ 
+                color: 'black',
+                zIndex: 1700, // Very high Z-Index
+                padding: '10px',
+                '&:active': { transform: 'scale(0.9)' } // 3D Click
+              }}
+            >
+              <X size={28} />
             </IconButton>
           </Box>
 
@@ -253,7 +259,7 @@ export default function Navbar({ session, onLogout, userRole }) {
               <ListItemText primary="STORES" primaryTypographyProps={styles.mobileLink} />
             </ListItem>
             
-            <Box sx={{ my: 2, height: '1px', bgcolor: '#eee' }} />
+            <Box sx={{ my: 3, height: '1px', bgcolor: '#eee' }} />
 
             {session ? (
               <>
@@ -282,8 +288,8 @@ export default function Navbar({ session, onLogout, userRole }) {
         </Box>
       </Drawer>
 
-      {/* MEGA MENU: APPAREL (Same as before) */}
-      <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '115px', left: 0, right: 0, zIndex: 1400 }}>
+      {/* MEGA MENU: APPAREL */}
+      <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '80px', left: 0, right: 0, zIndex: 1400 }}>
         <div 
           onMouseEnter={() => setApparelOpen(true)}
           onMouseLeave={() => setApparelOpen(false)}
@@ -292,7 +298,7 @@ export default function Navbar({ session, onLogout, userRole }) {
           <Container maxWidth="lg">
             <Box sx={{ 
               display: 'flex', 
-              flexDirection: { xs: 'column', md: 'row' }, // Stack on mobile
+              flexDirection: { xs: 'column', md: 'row' }, 
               gap: { xs: 4, md: 15 }, 
               justifyContent: 'center',
               textAlign: { xs: 'center', md: 'left' } 
@@ -334,14 +340,26 @@ export default function Navbar({ session, onLogout, userRole }) {
         open={searchOpen} 
         onClose={() => { setSearchOpen(false); setSearchQuery(""); }}
         transitionDuration={400}
-        PaperProps={{ sx: { height: '100vh', backgroundColor: 'white' } }}
+        PaperProps={{ sx: { height: '100vh', backgroundColor: 'white', zIndex: 2000 } }} // ✅ Max Z-Index
+        sx={{ zIndex: 2000 }}
       >
-        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          
+          {/* ✅ FIXED SEARCH CLOSE BUTTON */}
           <IconButton 
             onClick={() => { setSearchOpen(false); setSearchQuery(""); }} 
-            sx={{ position: 'absolute', top: 40, right: 40, color: 'black' }}
+            sx={{ 
+              position: 'absolute', 
+              top: 30, 
+              right: 30, 
+              color: 'black',
+              zIndex: 2001, // Above everything
+              padding: '10px',
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.1)' }
+            }}
           >
-            <X size={32} strokeWidth={1} />
+            <X size={32} strokeWidth={1.5} />
           </IconButton>
           
           <Box sx={{ width: '80%', maxWidth: 600, position: 'relative' }}>
@@ -355,7 +373,7 @@ export default function Navbar({ session, onLogout, userRole }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleSearch}
               sx={{
-                fontSize: { xs: '24px', md: '48px' }, // Responsive font
+                fontSize: { xs: '24px', md: '48px' },
                 fontWeight: 800,
                 textAlign: 'center',
                 letterSpacing: '-1px',
@@ -384,6 +402,7 @@ const styles = {
     fontFamily: 'Inter, sans-serif',
     textDecoration: 'none',
     textTransform: 'uppercase',
+    transition: 'color 0.3s ease'
   }),
   navLink: (color) => ({
     fontSize: '11px',
@@ -395,6 +414,7 @@ const styles = {
     cursor: 'pointer',
     position: 'relative',
     paddingBottom: '2px',
+    transition: 'color 0.3s ease'
   }),
   textButton: (color) => ({
     background: 'none',
@@ -409,6 +429,7 @@ const styles = {
     fontFamily: 'inherit',
     padding: 0,
     position: 'relative',
+    transition: 'color 0.3s ease'
   }),
   menuHeader: {
     fontSize: '10px',
@@ -432,7 +453,6 @@ const styles = {
     textDecoration: 'none',
     transition: 'opacity 0.2s',
   },
-  // Mobile specific styles
   mobileLink: {
     fontWeight: 900, 
     fontSize: '24px', 
