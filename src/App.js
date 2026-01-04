@@ -13,7 +13,7 @@ import LoadingScreen from "./components/LoadingScreen";
 import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalStyles from "./components/GlobalStyles";
 import { supabase } from "./supabase/supabaseClient";
-
+import ScrollToTop from "./components/ScrollToTop";
 // --- CONTEXTS ---
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
@@ -30,6 +30,7 @@ const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage")); // <--- ADDED IMPORT
 
 // Admin Pages
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -151,16 +152,30 @@ function App() {
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // 🔥 SAFETY TIMEOUT (prevents infinite loading)
+    const loadingTimeout = setTimeout(() => {
+      console.warn("Loading timeout reached. Forcing app render.");
       if (mounted) {
+        setLoading(false);
+      }
+    }, 5000); // 5 seconds max
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
         if (session) {
           setSession(session);
-          fetchUserRole(session.user.id);
-        } else {
-          setSession(null);
+          await fetchUserRole(session.user.id);
         }
-        setLoading(false);
+      } catch (err) {
+        console.error("Auth init failed", err);
+      } finally {
+        if (mounted) {
+          setLoading(false); 
+        }
       }
     };
 
@@ -175,13 +190,13 @@ function App() {
           setSession(null);
           setUserRole('customer');
         }
-        setLoading(false);
       }
     });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
+      if (subscription) subscription.unsubscribe();
     };
   }, []);
 
@@ -235,23 +250,34 @@ function App() {
         <WishlistProvider>
           <CartProvider>
             <Router>
+              <ScrollToTop />
               <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
                 
                 <AnnouncementBar />
-                
-                {/* ✅ FIX: Pass userRole to Navbar */}
                 <Navbar session={session} userRole={userRole} onLogout={handleLogout} />
-
-                {/* Admin Access Button - Only shows for admins */}
                 <AdminAccessButton userRole={userRole} />
 
-                <Suspense fallback={<LoadingScreen />}>
+                <Suspense fallback={
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    minHeight: '60vh',
+                    color: '#666',
+                    fontWeight: 600 
+                  }}>
+                    Loading page...
+                  </Box>
+                }>
                   <Routes>
                     <Route path="/" element={<HomePage session={session} />} />
                     <Route path="/products" element={<ProductList session={session} />} />
                     <Route path="/categories" element={<CategoriesPage session={session} />} />
                     <Route path="/product/:id" element={<ProductDetailsPage session={session} />} />
                     <Route path="/about" element={<AboutUsPage session={session} />} />
+                    
+                    {/* ✅ ADDED CONTACT ROUTE */}
+                    <Route path="/contact" element={<ContactPage />} />
                     
                     <Route path="/login" element={
                       session ? <Navigate to="/" replace /> : <Auth onLogin={handleLogin} />
@@ -272,7 +298,7 @@ function App() {
                       session ? <UserOrderDetailsPage session={session} /> : <Navigate to="/login" replace />
                     } />
 
-                    {/* Admin Routes - SIMPLE CHECK */}
+                    {/* Admin Routes */}
                     <Route path="/admin" element={
                       userRole === "admin" ? <AdminPage session={session} /> : <Navigate to="/" replace />
                     } />
@@ -289,7 +315,6 @@ function App() {
                       userRole === "admin" ? <ProductForm session={session} /> : <Navigate to="/" replace />
                     } />
 
-                    {/* Test Route */}
                     <Route path="/test-route" element={
                       <div style={{ padding: '100px', textAlign: 'center' }}>
                         <h1>TEST ROUTE</h1>

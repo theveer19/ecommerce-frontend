@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Box, Typography, Button, Container, useMediaQuery } from '@mui/material';
+import { Box, Typography, Button, Container } from '@mui/material';
 import { ArrowDown } from 'lucide-react';
 import { supabase } from '../supabase/supabaseClient';
 import ProductCard from '../components/ProductCard';
@@ -9,9 +9,6 @@ export default function HomePage({ session }) {
   const productSectionRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Check if screen is mobile (less than 600px)
-  const isMobile = useMediaQuery('(max-width:600px)');
 
   useEffect(() => {
     const fetchLatest = async () => {
@@ -68,7 +65,7 @@ export default function HomePage({ session }) {
             </Link>
           </Box>
 
-          {/* === STRICT CSS GRID LAYOUT === */}
+          {/* === RESPONSIVE CSS GRID LAYOUT === */}
           {loading ? (
             <Box sx={{ textAlign: 'center', py: 10 }}>
               <Typography sx={{ color: '#999' }}>Loading products...</Typography>
@@ -80,8 +77,16 @@ export default function HomePage({ session }) {
           ) : (
             <Box sx={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: '10px',
+              // Responsive Columns:
+              // xs (0px+): 2 Columns
+              // sm (600px+): 3 Columns
+              // md (900px+): 4 Columns
+              gridTemplateColumns: {
+                xs: 'repeat(2, 1fr)',
+                sm: 'repeat(3, 1fr)',
+                md: 'repeat(4, 1fr)'
+              },
+              gap: '10px', // Tight gap
               width: '100%'
             }}>
               {products.map((product) => (

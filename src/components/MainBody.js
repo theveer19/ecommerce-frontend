@@ -106,6 +106,7 @@ const MainBody = ({ products }) => {
       </Container>
     </Box>
   );
+  
 };
 
 export default MainBody;

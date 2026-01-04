@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingBag, Search, X } from "lucide-react";
-import { Box, Container, Collapse, Drawer, Input, IconButton } from "@mui/material";
+import { ShoppingBag, Search, X, Menu, User, LogOut, ShieldCheck } from "lucide-react";
+import { Box, Container, Collapse, Drawer, Input, IconButton, List, ListItem, ListItemText } from "@mui/material";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar({ session, onLogout, userRole }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [apparelOpen, setApparelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // NEW: Mobile State
   const [searchQuery, setSearchQuery] = useState("");
   
   const navigate = useNavigate();
@@ -95,14 +96,27 @@ export default function Navbar({ session, onLogout, userRole }) {
       }}>
         <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
           
-          {/* 1. LEFT: LOGO */}
-          <Box sx={{ width: '200px', display: 'flex', justifyContent: 'flex-start' }}>
+          {/* 1. LEFT: HAMBURGER (Mobile) & LOGO */}
+          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: 'auto', md: '200px' } }}>
+            {/* Mobile Menu Icon */}
+            <IconButton 
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ 
+                display: { xs: 'flex', md: 'none' }, 
+                color: textColor,
+                mr: 1,
+                padding: 0
+              }}
+            >
+              <Menu size={24} />
+            </IconButton>
+
             <Link to="/" style={styles.logo(textColor)}>
               OneT
             </Link>
           </Box>
 
-          {/* 2. CENTER: NAV LINKS (Absolute Center) */}
+          {/* 2. CENTER: NAV LINKS (Hidden on Mobile) */}
           <Box sx={{ 
             display: { xs: 'none', md: 'flex' }, 
             gap: 6, 
@@ -116,7 +130,6 @@ export default function Navbar({ session, onLogout, userRole }) {
               NEW IN
             </Link>
             
-            {/* Mega Menu Trigger */}
             <div 
               onMouseEnter={() => setApparelOpen(true)}
               onMouseLeave={() => setApparelOpen(false)}
@@ -133,43 +146,53 @@ export default function Navbar({ session, onLogout, userRole }) {
           </Box>
 
           {/* 3. RIGHT: ACTIONS */}
-          <Box sx={{ width: '300px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 3 }}>
-            <button onClick={() => setSearchOpen(true)} className="nav-hover-underline" style={styles.textButton(textColor)}>
-              SEARCH
+          <Box sx={{ 
+            width: { xs: 'auto', md: '300px' }, 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            alignItems: 'center', 
+            gap: { xs: 2, md: 3 } 
+          }}>
+            {/* Search Button: Text on Desktop, Icon on Mobile */}
+            <button onClick={() => setSearchOpen(true)} className="nav-hover-underline" style={{ ...styles.textButton(textColor), display: 'flex', alignItems: 'center' }}>
+              <span style={{ display: window.innerWidth > 900 ? 'block' : 'none' }}>SEARCH</span>
+              <Search size={20} style={{ display: window.innerWidth <= 900 ? 'block' : 'none' }} />
             </button>
             
-            {/* Login / Account Logic */}
-            {session ? (
-              <>
-                <Link to="/orders" className="nav-hover-underline" style={styles.textButton(textColor)}>
-                  ACCOUNT
-                </Link>
-                
-                {isAdmin && (
-                  <Link to="/admin" style={{
-                    ...styles.textButton(textColor),
-                    border: `1px solid ${textColor}`,
-                    padding: '4px 8px',
-                    marginRight: '8px'
-                  }}>
-                    ADMIN
+            {/* Desktop Logic for Login/Account (Hidden on Mobile) */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 3 }}>
+              {session ? (
+                <>
+                  <Link to="/orders" className="nav-hover-underline" style={styles.textButton(textColor)}>
+                    ACCOUNT
                   </Link>
-                )}
-                
-                <button onClick={onLogout} className="nav-hover-underline" style={styles.textButton(textColor)}>
-                  LOGOUT
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className="nav-hover-underline" style={styles.textButton(textColor)}>
-                LOGIN
-              </Link>
-            )}
+                  
+                  {isAdmin && (
+                    <Link to="/admin" style={{
+                      ...styles.textButton(textColor),
+                      border: `1px solid ${textColor}`,
+                      padding: '4px 8px',
+                      marginRight: '8px'
+                    }}>
+                      ADMIN
+                    </Link>
+                  )}
+                  
+                  <button onClick={onLogout} className="nav-hover-underline" style={styles.textButton(textColor)}>
+                    LOGOUT
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="nav-hover-underline" style={styles.textButton(textColor)}>
+                  LOGIN
+                </Link>
+              )}
+            </Box>
 
-            {/* ROTATING CART ICON - FORCE BLACK COLOR */}
+            {/* ROTATING CART ICON */}
             <Link to="/cart" style={{ 
               position: 'relative', 
-              color: '#000000', // STRICTLY BLACK
+              color: '#000000', 
               textDecoration: 'none', 
               display: 'flex', 
               alignItems: 'center' 
@@ -181,11 +204,9 @@ export default function Navbar({ session, onLogout, userRole }) {
                  animation: 'spin3D 6s linear infinite',
                  transformStyle: 'preserve-3d'
                }}>
-                 {/* Stroke is black because parent color is #000000 */}
                  <ShoppingBag size={20} strokeWidth={1.5} />
                </Box>
                
-               {/* Cart Count Badge */}
                {cartItems.length > 0 && (
                  <span style={{ 
                    marginLeft: '6px', 
@@ -194,7 +215,7 @@ export default function Navbar({ session, onLogout, userRole }) {
                    position: 'absolute',
                    right: -12,
                    top: 0,
-                   color: '#000000' // Badge text also black
+                   color: '#000000'
                  }}>
                    ({cartItems.length})
                  </span>
@@ -204,7 +225,64 @@ export default function Navbar({ session, onLogout, userRole }) {
         </Container>
       </header>
 
-      {/* MEGA MENU: APPAREL */}
+      {/* --- MOBILE DRAWER MENU --- */}
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        PaperProps={{ sx: { width: '80%', maxWidth: '300px', bgcolor: 'white' } }}
+      >
+        <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+            <Link to="/" style={styles.logo('#000')} onClick={() => setMobileMenuOpen(false)}>
+              OneT
+            </Link>
+            <IconButton onClick={() => setMobileMenuOpen(false)}>
+              <X size={24} />
+            </IconButton>
+          </Box>
+
+          <List sx={{ flexGrow: 1 }}>
+            <ListItem button component={Link} to="/products?sort=new" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemText primary="NEW IN" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+            <ListItem button onClick={() => { setApparelOpen(true); setMobileMenuOpen(false); }}>
+              <ListItemText primary="APPAREL" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+            <ListItem button component={Link} to="/about" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemText primary="STORES" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+            
+            <Box sx={{ my: 2, height: '1px', bgcolor: '#eee' }} />
+
+            {session ? (
+              <>
+                <ListItem button component={Link} to="/orders" onClick={() => setMobileMenuOpen(false)}>
+                  <User size={18} style={{ marginRight: 10 }} />
+                  <ListItemText primary="MY ACCOUNT" primaryTypographyProps={styles.mobileSubLink} />
+                </ListItem>
+                {isAdmin && (
+                  <ListItem button component={Link} to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                    <ShieldCheck size={18} style={{ marginRight: 10 }} />
+                    <ListItemText primary="ADMIN DASHBOARD" primaryTypographyProps={styles.mobileSubLink} />
+                  </ListItem>
+                )}
+                <ListItem button onClick={() => { onLogout(); setMobileMenuOpen(false); }}>
+                  <LogOut size={18} style={{ marginRight: 10 }} />
+                  <ListItemText primary="LOGOUT" primaryTypographyProps={styles.mobileSubLink} />
+                </ListItem>
+              </>
+            ) : (
+              <ListItem button component={Link} to="/login" onClick={() => setMobileMenuOpen(false)}>
+                <User size={18} style={{ marginRight: 10 }} />
+                <ListItemText primary="LOGIN / REGISTER" primaryTypographyProps={styles.mobileSubLink} />
+              </ListItem>
+            )}
+          </List>
+        </Box>
+      </Drawer>
+
+      {/* MEGA MENU: APPAREL (Same as before) */}
       <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '115px', left: 0, right: 0, zIndex: 1400 }}>
         <div 
           onMouseEnter={() => setApparelOpen(true)}
@@ -212,7 +290,13 @@ export default function Navbar({ session, onLogout, userRole }) {
           style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #eee', padding: '50px 0', boxShadow: '0 10px 40px rgba(0,0,0,0.05)' }}
         >
           <Container maxWidth="lg">
-            <Box sx={{ display: 'flex', gap: 15, justifyContent: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', md: 'row' }, // Stack on mobile
+              gap: { xs: 4, md: 15 }, 
+              justifyContent: 'center',
+              textAlign: { xs: 'center', md: 'left' } 
+            }}>
               <Box>
                 <div style={styles.menuHeader}>TOP WEAR</div>
                 <div style={styles.menuList}>
@@ -260,7 +344,7 @@ export default function Navbar({ session, onLogout, userRole }) {
             <X size={32} strokeWidth={1} />
           </IconButton>
           
-          <Box sx={{ width: '60%', maxWidth: 600, position: 'relative' }}>
+          <Box sx={{ width: '80%', maxWidth: 600, position: 'relative' }}>
             <Input
               autoFocus
               fullWidth
@@ -271,7 +355,7 @@ export default function Navbar({ session, onLogout, userRole }) {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleSearch}
               sx={{
-                fontSize: { xs: '32px', md: '48px' },
+                fontSize: { xs: '24px', md: '48px' }, // Responsive font
                 fontWeight: 800,
                 textAlign: 'center',
                 letterSpacing: '-1px',
@@ -347,5 +431,18 @@ const styles = {
     letterSpacing: '1px',
     textDecoration: 'none',
     transition: 'opacity 0.2s',
+  },
+  // Mobile specific styles
+  mobileLink: {
+    fontWeight: 900, 
+    fontSize: '24px', 
+    letterSpacing: '-1px', 
+    textTransform: 'uppercase'
+  },
+  mobileSubLink: {
+    fontWeight: 600, 
+    fontSize: '14px', 
+    letterSpacing: '1px', 
+    textTransform: 'uppercase'
   }
 };

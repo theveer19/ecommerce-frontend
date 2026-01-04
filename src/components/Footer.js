@@ -1,393 +1,238 @@
 import React from "react";
-import { Instagram, Facebook, Twitter, Mail } from "lucide-react";
+import { Link } from "react-router-dom"; 
+import { Box, Container, Grid, Typography, InputBase, IconButton, Divider } from "@mui/material";
+// 1. Import Linkedin
+import { Instagram, Facebook, Mail, ArrowRight, Linkedin } from "lucide-react";
 
-export default function AtelierFooter() {
+export default function Footer() {
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
-    // Handle newsletter subscription logic here
-    console.log("Newsletter subscription submitted");
-    alert("Thank you for subscribing!");
+    alert("Subscribed!");
   };
 
+  // 2. Added LinkedIn to the list
+  const socialLinks = [
+    { icon: Instagram, path: "https://instagram.com", label: "Instagram" },
+    { icon: Facebook, path: "https://facebook.com", label: "Facebook" },
+    { icon: Linkedin, path: "https://linkedin.com", label: "LinkedIn" },
+    { icon: Mail, path: "mailto:hello@onet.com", label: "Email" }
+  ];
+
+  const shopLinks = [
+    { text: 'New Arrivals', path: '/products?sort=new' },
+    { text: 'Best Sellers', path: '/products' },
+    { text: 'Apparel', path: '/products?cat=tshirts' },
+    { text: 'Accessories', path: '/products?cat=accessories' },
+    { text: 'Sale', path: '/products?sort=price-low' }
+  ];
+
+  const helpLinks = [
+    { text: 'Track Order', path: '/orders' },
+    { text: 'Returns', path: '/contact' },
+    { text: 'Shipping Info', path: '/contact' },
+    { text: 'Size Guide', path: '/contact' },
+    { text: 'Contact Us', path: '/contact' }
+  ];
+
   return (
-    <footer style={styles.footer}>
-      {/* Main Footer */}
-      <div style={styles.container}>
-        <div style={styles.grid}>
-          {/* Brand Column */}
-          <div style={styles.column}>
-            <h3 style={styles.logo}>
-              <a href="/" style={styles.logoLink}>ATELIER</a>
-            </h3>
-            <p style={styles.description}>
-              Timeless elegance meets modern sensibility. Discover sustainably-crafted pieces for the contemporary wardrobe.
-            </p>
-            <div style={styles.socialLinks}>
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={styles.socialButton}
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
-              <a 
-                href="https://facebook.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={styles.socialButton}
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={styles.socialButton}
-                aria-label="Twitter"
-              >
-                <Twitter size={20} />
-              </a>
-              <a 
-                href="mailto:hello@atelier.com" 
-                style={styles.socialButton}
-                aria-label="Email"
-              >
-                <Mail size={20} />
-              </a>
-            </div>
-          </div>
+    <Box sx={styles.footerWrapper}>
+      <style>{`
+        .hover-lift { transition: transform 0.3s ease, color 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-3px); color: #fff !important; }
+      `}</style>
 
-          {/* Shop Column */}
-          <div style={styles.column}>
-            <h4 style={styles.columnTitle}>Shop</h4>
-            <ul style={styles.list}>
-              <li style={styles.listItem}>
-                <a href="/shop/women" style={styles.link}>Women</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/shop/accessories" style={styles.link}>Accessories</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/shop/unisex" style={styles.link}>Unisex</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/shop/new-arrivals" style={styles.link}>New Arrivals</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/shop/sale" style={styles.link}>Sale</a>
-              </li>
-            </ul>
-          </div>
+      <Container maxWidth="xl" sx={{ px: { xs: 4, md: 8 }, pt: 8, pb: 4 }}>
+        
+        <Grid container spacing={6}>
+          
+          {/* 1. BRAND COLUMN */}
+          <Grid item xs={12} md={4}>
+            <Link to="/" style={{ textDecoration: 'none' }}>
+              <Typography variant="h2" sx={styles.brandLogo}>OneT</Typography>
+            </Link>
+            <Typography sx={styles.brandDesc}>
+              Extension of your expression. Timeless elegance meets modern sensibility in a digital-first era.
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+              {socialLinks.map((item, i) => (
+                <IconButton 
+                  key={i} 
+                  sx={styles.socialBtn}
+                  component="a"
+                  href={item.path}
+                  target={item.path.startsWith('http') ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  aria-label={item.label}
+                >
+                  <item.icon size={18} />
+                </IconButton>
+              ))}
+            </Box>
+          </Grid>
 
-          {/* Customer Service Column */}
-          <div style={styles.column}>
-            <h4 style={styles.columnTitle}>Customer Service</h4>
-            <ul style={styles.list}>
-              <li style={styles.listItem}>
-                <a href="/contact" style={styles.link}>Contact Us</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/shipping-returns" style={styles.link}>Shipping & Returns</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/size-guide" style={styles.link}>Size Guide</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/faq" style={styles.link}>FAQs</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/track-order" style={styles.link}>Track Order</a>
-              </li>
-            </ul>
-          </div>
+          {/* 2. LINKS: SHOP */}
+          <Grid item xs={6} md={2}>
+            <Typography sx={styles.colHeader}>SHOP</Typography>
+            <Box sx={styles.linkStack}>
+              {shopLinks.map((item) => (
+                <Link key={item.text} to={item.path} style={{ textDecoration: 'none' }}>
+                  <Typography className="hover-lift" sx={styles.link}>
+                    {item.text}
+                  </Typography>
+                </Link>
+              ))}
+            </Box>
+          </Grid>
 
-          {/* Company Column */}
-          <div style={styles.column}>
-            <h4 style={styles.columnTitle}>Company</h4>
-            <ul style={styles.list}>
-              <li style={styles.listItem}>
-                <a href="/about" style={styles.link}>About Us</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/sustainability" style={styles.link}>Sustainability</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/careers" style={styles.link}>Careers</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/press" style={styles.link}>Press</a>
-              </li>
-              <li style={styles.listItem}>
-                <a href="/affiliate-program" style={styles.link}>Affiliate Program</a>
-              </li>
-            </ul>
-          </div>
+          {/* 3. LINKS: HELP */}
+          <Grid item xs={6} md={2}>
+            <Typography sx={styles.colHeader}>HELP</Typography>
+            <Box sx={styles.linkStack}>
+              {helpLinks.map((item) => (
+                <Link key={item.text} to={item.path} style={{ textDecoration: 'none' }}>
+                  <Typography className="hover-lift" sx={styles.link}>
+                    {item.text}
+                  </Typography>
+                </Link>
+              ))}
+            </Box>
+          </Grid>
 
-          {/* Newsletter Column */}
-          <div style={styles.column}>
-            <h4 style={styles.columnTitle}>Stay Updated</h4>
-            <p style={styles.newsletterText}>
-              Subscribe to receive updates on new arrivals and exclusive offers.
-            </p>
-            <form onSubmit={handleNewsletterSubmit} style={styles.newsletterForm}>
-              <input 
-                type="email" 
-                placeholder="Email address"
-                style={styles.newsletterInput}
-                required
-              />
-              <button type="submit" style={styles.newsletterButton}>
-                →
-              </button>
+          {/* 4. NEWSLETTER */}
+          <Grid item xs={12} md={4}>
+            <Typography sx={styles.colHeader}>STAY IN THE LOOP</Typography>
+            <Typography sx={{ color: '#888', fontSize: '13px', mb: 2, lineHeight: 1.6 }}>
+              Sign up for exclusive drops, early access, and insider events.
+            </Typography>
+            
+            <form onSubmit={handleNewsletterSubmit}>
+              <Box sx={styles.inputWrapper}>
+                <InputBase 
+                  placeholder="Enter your email" 
+                  sx={styles.input} 
+                  type="email" 
+                  required
+                />
+                <IconButton type="submit" sx={styles.submitBtn}>
+                  <ArrowRight color="black" size={18} />
+                </IconButton>
+              </Box>
             </form>
-            <p style={styles.privacyText}>
-              By subscribing you agree to our <a href="/privacy" style={styles.privacyLink}>Privacy Policy</a>.
-            </p>
-          </div>
-        </div>
-      </div>
+          </Grid>
 
-      {/* Bottom Bar */}
-      <div style={styles.bottomBar}>
-        <div style={styles.container}>
-          <div style={styles.bottomContent}>
-            <p style={styles.copyright}>
-              © {new Date().getFullYear()} ATELIER. All rights reserved.
-            </p>
-            <div style={styles.legalLinks}>
-              <a href="/privacy-policy" style={styles.legalLink}>Privacy Policy</a>
-              <span style={styles.separator}>•</span>
-              <a href="/terms-of-service" style={styles.legalLink}>Terms of Service</a>
-              <span style={styles.separator}>•</span>
-              <a href="/cookie-settings" style={styles.legalLink}>Cookie Settings</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
+        </Grid>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mt: 8, mb: 4 }} />
+
+        {/* BOTTOM BAR */}
+        <Box sx={styles.bottomBar}>
+          <Typography sx={{ fontSize: '12px', color: '#666', fontWeight: 500 }}>
+            © {new Date().getFullYear()} OneT STUDIOS.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            {['Privacy Policy', 'Terms of Service', 'Cookies'].map((text) => (
+              <Link key={text} to="/contact" style={{ textDecoration: 'none' }}>
+                <Typography sx={styles.legalLink}>
+                  {text}
+                </Typography>
+              </Link>
+            ))}
+          </Box>
+        </Box>
+
+      </Container>
+    </Box>
   );
 }
 
 const styles = {
-  footer: {
-    backgroundColor: '#2A2A2A',
-    color: '#E0D5C7',
+  footerWrapper: {
+    bgcolor: '#000000',
+    color: '#ffffff',
+    borderTop: '1px solid #222',
+    position: 'relative',
+    overflow: 'hidden'
   },
-  container: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '0 24px',
+  brandLogo: {
+    fontSize: '42px',
+    fontWeight: 900,
+    letterSpacing: '-2px',
+    color: 'white',
+    mb: 2,
+    lineHeight: 1,
+    cursor: 'pointer'
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '48px',
-    padding: '80px 0 60px',
-  },
-  column: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  logo: {
-    fontSize: '24px',
-    fontWeight: '700',
-    letterSpacing: '2px',
-    color: '#F5F1E8',
-    margin: 0,
-  },
-  logoLink: {
-    color: '#F5F1E8',
-    textDecoration: 'none',
-    fontFamily: 'inherit',
-  },
-  description: {
+  brandDesc: {
     fontSize: '14px',
-    lineHeight: '1.6',
-    color: '#A09A8C',
-    margin: 0,
+    color: '#888',
+    lineHeight: 1.6,
+    maxWidth: '300px'
   },
-  socialLinks: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
-  },
-  socialButton: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(224, 213, 199, 0.2)',
-    color: '#E0D5C7',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
+  socialBtn: {
+    color: 'white',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: '8px',
+    width: 40, height: 40,
     transition: 'all 0.3s ease',
-    textDecoration: 'none',
+    '&:hover': {
+      bgcolor: 'white',
+      color: 'black',
+      transform: 'translateY(-3px)'
+    }
   },
-  columnTitle: {
-    fontSize: '14px',
-    fontWeight: '600',
+  colHeader: {
+    fontSize: '13px',
+    fontWeight: 800,
     letterSpacing: '1px',
-    textTransform: 'uppercase',
-    color: '#F5F1E8',
-    margin: 0,
+    color: 'white',
+    mb: 3,
+    textTransform: 'uppercase'
   },
-  list: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
+  linkStack: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
-  },
-  listItem: {
-    margin: 0,
+    gap: 1.5
   },
   link: {
     fontSize: '14px',
-    color: '#A09A8C',
-    textDecoration: 'none',
-    transition: 'color 0.3s ease',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    textAlign: 'left',
-    fontFamily: 'inherit',
+    color: '#999',
+    fontWeight: 500,
+    cursor: 'pointer'
   },
-  newsletterText: {
-    fontSize: '14px',
-    lineHeight: '1.6',
-    color: '#A09A8C',
-    margin: 0,
-  },
-  newsletterForm: {
+  inputWrapper: {
     display: 'flex',
-    gap: '8px',
-    marginTop: '8px',
+    alignItems: 'center',
+    bgcolor: 'rgba(255,255,255,0.1)',
+    borderRadius: '4px',
+    p: 0.5,
+    pl: 2,
+    transition: 'bgcolor 0.3s',
+    '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
   },
-  newsletterInput: {
+  input: {
     flex: 1,
-    padding: '12px 16px',
-    backgroundColor: 'transparent',
-    border: '1px solid rgba(224, 213, 199, 0.2)',
-    color: '#F5F1E8',
     fontSize: '14px',
-    outline: 'none',
-    fontFamily: 'inherit',
-  },
-  newsletterButton: {
-    width: '48px',
-    height: '48px',
-    backgroundColor: '#8B7355',
-    border: 'none',
     color: 'white',
-    fontSize: '20px',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-    fontFamily: 'inherit',
+    'input::placeholder': { color: '#888' }
   },
-  privacyText: {
-    fontSize: '12px',
-    color: '#6B6B5A',
-    margin: 0,
-  },
-  privacyLink: {
-    color: '#8B7355',
-    textDecoration: 'none',
+  submitBtn: {
+    bgcolor: 'white',
+    borderRadius: '4px',
+    width: 36, height: 36,
+    '&:hover': { bgcolor: '#e0e0e0' }
   },
   bottomBar: {
-    borderTop: '1px solid rgba(224, 213, 199, 0.1)',
-    padding: '24px 0',
-  },
-  bottomContent: {
     display: 'flex',
+    flexDirection: { xs: 'column', md: 'row' },
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '16px',
-  },
-  copyright: {
-    fontSize: '14px',
-    color: '#6B6B5A',
-    margin: 0,
-  },
-  legalLinks: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
+    gap: 2
   },
   legalLink: {
-    fontSize: '14px',
-    color: '#6B6B5A',
-    textDecoration: 'none',
-    transition: 'color 0.3s ease',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  },
-  separator: {
-    color: '#6B6B5A',
-    fontSize: '14px',
-  },
+    fontSize: '12px',
+    color: '#666',
+    transition: 'color 0.2s',
+    '&:hover': { color: 'white' }
+  }
 };
-
-// Add hover effects and responsive styles
-const styleSheet = document.createElement('style');
-styleSheet.textContent = `
-  [style*="socialButton"]:hover,
-  a[style*="socialButton"]:hover {
-    background-color: #8B7355 !important;
-    border-color: #8B7355 !important;
-  }
-  
-  [style*="link"]:hover,
-  a[style*="link"]:hover {
-    color: #F5F1E8 !important;
-  }
-  
-  [style*="legalLink"]:hover,
-  a[style*="legalLink"]:hover {
-    color: #E0D5C7 !important;
-  }
-  
-  [style*="newsletterButton"]:hover {
-    background-color: #755F47 !important;
-  }
-  
-  [style*="newsletterInput"]:focus {
-    border-color: #8B7355 !important;
-  }
-  
-  [style*="newsletterInput"]::placeholder {
-    color: #6B6B5A;
-  }
-  
-  .privacyLink:hover {
-    text-decoration: underline !important;
-  }
-  
-  @media (max-width: 1024px) {
-    [style*="gridTemplateColumns: 'repeat(5, 1fr)'"] {
-      grid-template-columns: repeat(3, 1fr) !important;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    [style*="gridTemplateColumns: 'repeat(5, 1fr)'"] {
-      grid-template-columns: 1fr !important;
-    }
-    [style*="bottomContent"] {
-      flex-direction: column;
-      text-align: center;
-    }
-  }
-`;
-document.head.appendChild(styleSheet);
