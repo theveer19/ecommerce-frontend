@@ -31,7 +31,7 @@ const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
-const ContactPage = lazy(() => import("./pages/ContactPage")); // ✅ IMPORTED CONTACT PAGE
+const ContactPage = lazy(() => import("./pages/ContactPage")); // ✅ Contact Page Included
 
 // Admin Pages
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -153,26 +153,13 @@ function App() {
   useEffect(() => {
     let mounted = true;
 
-    // 🔥 SAFETY TIMEOUT
+    // 🔥 SAFETY TIMEOUT (Prevents infinite loading)
     const loadingTimeout = setTimeout(() => {
       if (mounted) {
         console.warn("Loading timeout reached. Forcing app render.");
         setLoading(false);
       }
-    }, 5000); 
-
-    // --- 📱 MOBILE BACK BUTTON FIX START ---
-    const handleBackButton = (event) => {
-      // If user tries to go back from home page, push state to keep them there
-      if (window.location.pathname === '/') {
-        window.history.pushState(null, "", window.location.pathname);
-      }
-    };
-
-    // Initialize history state and add listener
-    window.history.pushState(null, "", window.location.pathname);
-    window.addEventListener('popstate', handleBackButton);
-    // --- 📱 MOBILE BACK BUTTON FIX END ---
+    }, 5000); // 5 seconds max
 
     const initAuth = async () => {
       try {
@@ -211,7 +198,6 @@ function App() {
       mounted = false;
       clearTimeout(loadingTimeout);
       if (subscription) subscription.unsubscribe();
-      window.removeEventListener('popstate', handleBackButton); // Cleanup listener
     };
   }, []);
 
@@ -291,7 +277,7 @@ function App() {
                     <Route path="/product/:id" element={<ProductDetailsPage session={session} />} />
                     <Route path="/about" element={<AboutUsPage session={session} />} />
                     
-                    {/* ✅ ADDED CONTACT ROUTE */}
+                    {/* ✅ CONTACT ROUTE */}
                     <Route path="/contact" element={<ContactPage />} />
                     
                     <Route path="/login" element={

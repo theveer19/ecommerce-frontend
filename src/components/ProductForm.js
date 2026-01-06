@@ -1,4 +1,3 @@
-// src/pages/ProductForm.js - UPDATED WITH FALLBACK SOLUTION
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
@@ -64,16 +63,20 @@ export default function ProductForm() {
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // Categories
+  // ✅ UPDATED: Categories matching your Navbar Links EXACTLY
   const categories = [
-    "Electronics",
-    "Fashion",
-    "Home & Kitchen", 
-    "Books",
-    "Sports",
-    "Beauty",
-    "Toys",
-    "Other"
+    { value: "tshirts", label: "T-Shirts" },
+    { value: "hoodies", label: "Hoodies" },
+    { value: "jackets", label: "Jackets" },
+    { value: "shirts", label: "Shirts" },
+    { value: "sweatshirts", label: "Sweatshirts" },
+    { value: "pants", label: "Pants" },
+    { value: "cargos", label: "Cargos" },
+    { value: "shorts", label: "Shorts" },
+    { value: "caps", label: "Caps" },
+    { value: "bags", label: "Bags" },
+    { value: "jewelry", label: "Jewelry" },
+    { value: "other", label: "Other" }
   ];
 
   // Steps
@@ -107,7 +110,7 @@ export default function ProductForm() {
         setImagePreview(data.image_url || "");
         setBrand(data.brand || "");
         setSku(data.sku || "");
-        // Check if these columns exist before setting them
+        
         if (data.hasOwnProperty('is_active')) {
           setIsActive(data.is_active !== false);
         }
@@ -127,7 +130,6 @@ export default function ProductForm() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Basic validation
       if (!file.type.startsWith('image/')) {
         showSnackbar("Please select an image file", "error");
         return;
@@ -150,12 +152,10 @@ export default function ProductForm() {
     try {
       setUploading(true);
       
-      // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
       
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(filePath, file, {
@@ -165,7 +165,6 @@ export default function ProductForm() {
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
         .getPublicUrl(filePath);
@@ -179,17 +178,14 @@ export default function ProductForm() {
     }
   };
 
-  // Show snackbar notification
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
   };
 
   // Validate current step
   const validateCurrentStep = () => {
-    console.log("Validating step:", activeStep);
-    
     switch (activeStep) {
-      case 0: // Basic Info - only check name and category
+      case 0: 
         if (!name.trim()) {
           showSnackbar("Product name is required", "error");
           return false;
@@ -200,7 +196,7 @@ export default function ProductForm() {
         }
         return true;
         
-      case 1: // Pricing & Stock - check price and stock
+      case 1:
         if (!price) {
           showSnackbar("Price is required", "error");
           return false;
@@ -217,7 +213,7 @@ export default function ProductForm() {
         }
         return true;
         
-      case 2: // Image
+      case 2:
         if (!imagePreview && !imageFile) {
           showSnackbar("Please upload a product image", "error");
           return false;
@@ -229,79 +225,40 @@ export default function ProductForm() {
     }
   };
 
-  // Handle next step
   const handleNext = () => {
-    console.log("Next clicked, current step:", activeStep);
     if (!validateCurrentStep()) {
       return;
     }
     setActiveStep((prev) => prev + 1);
   };
 
-  // Handle previous step
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
   };
 
-  // Submit form - UPDATED WITH FALLBACK LOGIC
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form...");
-    
     setLoading(true);
     
     try {
-      // Final validation - check all required fields
-      if (!name.trim()) {
-        showSnackbar("Product name is required", "error");
-        setLoading(false);
-        return;
-      }
-      if (!price) {
-        showSnackbar("Price is required", "error");
-        setLoading(false);
-        return;
-      }
-      const priceNum = parseFloat(price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        showSnackbar("Price must be greater than 0", "error");
-        setLoading(false);
-        return;
-      }
-      if (!category) {
-        showSnackbar("Category is required", "error");
-        setLoading(false);
-        return;
-      }
-      
-      const stockNum = parseInt(stock);
-      if (isNaN(stockNum) || stockNum < 0) {
-        showSnackbar("Stock must be 0 or greater", "error");
-        setLoading(false);
-        return;
-      }
-      
       let imageUrl = imagePreview;
       
-      // Upload new image if selected
       if (imageFile) {
         try {
           imageUrl = await uploadImage(imageFile);
         } catch (error) {
           console.error("Image upload failed:", error);
-          // Use existing image or placeholder
           if (!imagePreview) {
             imageUrl = "https://via.placeholder.com/400x300?text=Product+Image";
           }
         }
       }
       
-      // Prepare basic product data (without new columns)
       const basicProductData = {
         name: name.trim(),
         description: description.trim(),
         price: parseFloat(price),
-        category,
+        category, // This now saves 'tshirts', 'hoodies', etc.
         stock: parseInt(stock) || 0,
         image_url: imageUrl,
         brand: brand.trim() || null,
@@ -309,20 +266,16 @@ export default function ProductForm() {
         updated_at: new Date().toISOString(),
       };
       
-      // Prepare product data with new columns
       const productDataWithNewColumns = {
         ...basicProductData,
         is_active: isActive,
         is_featured: isFeatured,
       };
       
-      console.log("Saving product data:", productDataWithNewColumns);
-      
       let result;
       let saveAttempt = 1;
       
       try {
-        // First try: Save with new columns
         if (isEditMode) {
           result = await supabase
             .from("products")
@@ -338,12 +291,10 @@ export default function ProductForm() {
         const { error } = result;
         
         if (error) {
-          // Check if error is about missing columns
           if (error.message.includes('is_active') || error.message.includes('is_featured')) {
             console.log("New columns not found in schema, trying without them...");
             saveAttempt = 2;
             
-            // Second try: Save without new columns
             if (isEditMode) {
               result = await supabase
                 .from("products")
@@ -360,11 +311,10 @@ export default function ProductForm() {
             if (secondError) throw secondError;
             
             showSnackbar(
-              `Product ${isEditMode ? 'updated' : 'created'} successfully! (Note: Active/Featured flags not saved)`,
+              `Product ${isEditMode ? 'updated' : 'created'} successfully!`,
               "warning"
             );
           } else {
-            // Different error, throw it
             throw error;
           }
         } else {
@@ -378,7 +328,6 @@ export default function ProductForm() {
         throw error;
       }
       
-      // Redirect to admin page
       setTimeout(() => navigate("/admin"), 1500);
       
     } catch (error) {
@@ -392,7 +341,6 @@ export default function ProductForm() {
     }
   };
 
-  // Render step content
   const renderStepContent = (step) => {
     switch (step) {
       case 0:
@@ -410,14 +358,8 @@ export default function ProductForm() {
                   onChange={(e) => setName(e.target.value)}
                   fullWidth
                   required
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                   placeholder="Enter product name"
-                  helperText="Required field"
                 />
               </Grid>
               <Grid item xs={12}>
@@ -428,16 +370,12 @@ export default function ProductForm() {
                   fullWidth
                   multiline
                   rows={4}
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                   placeholder="Enter product description"
                 />
               </Grid>
               <Grid item xs={12} md={6}>
+                {/* ✅ UPDATED CATEGORY SELECTOR */}
                 <FormControl fullWidth required sx={{ mb: 2 }}>
                   <InputLabel>Category *</InputLabel>
                   <Select
@@ -450,8 +388,8 @@ export default function ProductForm() {
                       <em>Select a category</em>
                     </MenuItem>
                     {categories.map((cat) => (
-                      <MenuItem key={cat} value={cat}>
-                        {cat}
+                      <MenuItem key={cat.value} value={cat.value}>
+                        {cat.label}
                       </MenuItem>
                     ))}
                   </Select>
@@ -463,12 +401,7 @@ export default function ProductForm() {
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   fullWidth
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                   placeholder="Enter brand name"
                 />
               </Grid>
@@ -496,13 +429,7 @@ export default function ProductForm() {
                     startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                     inputProps: { min: 0, step: 0.01 }
                   }}
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
-                  helperText="Required field"
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -512,15 +439,8 @@ export default function ProductForm() {
                   value={stock}
                   onChange={(e) => setStock(e.target.value)}
                   fullWidth
-                  InputProps={{
-                    inputProps: { min: 0 }
-                  }}
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
+                  InputProps={{ inputProps: { min: 0 } }}
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -529,12 +449,7 @@ export default function ProductForm() {
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                   fullWidth
-                  sx={{ 
-                    mb: 2,
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    }
-                  }}
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                   placeholder="Auto-generated if empty"
                 />
               </Grid>
@@ -577,9 +492,6 @@ export default function ProductForm() {
                     }
                   />
                 </Box>
-                <Typography variant="caption" sx={{ color: '#6B7280', display: 'block', mt: 1 }}>
-                  Active products are visible to customers. Featured products appear on the homepage.
-                </Typography>
               </Grid>
             </Grid>
           </Box>
@@ -610,8 +522,7 @@ export default function ProductForm() {
                     borderColor: '#8B7355',
                     color: '#8B7355',
                     borderRadius: '12px',
-                    px: 4,
-                    py: 1.5,
+                    px: 4, py: 1.5,
                     '&:hover': {
                       borderColor: '#755F47',
                       background: 'rgba(139, 115, 85, 0.05)'
@@ -624,22 +535,8 @@ export default function ProductForm() {
               
               {imagePreview && (
                 <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 2, color: '#4A4A3A', fontWeight: 600 }}>
-                    Image Preview:
-                  </Typography>
-                  <Card sx={{ 
-                    maxWidth: 300, 
-                    margin: '0 auto',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
-                  }}>
-                    <CardMedia
-                      component="img"
-                      image={imagePreview}
-                      alt="Preview"
-                      sx={{ height: 200, objectFit: 'cover' }}
-                    />
+                  <Card sx={{ maxWidth: 300, margin: '0 auto', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}>
+                    <CardMedia component="img" image={imagePreview} alt="Preview" sx={{ height: 200, objectFit: 'cover' }} />
                     <CardContent>
                       {imageFile && (
                         <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
@@ -650,26 +547,14 @@ export default function ProductForm() {
                   </Card>
                 </Box>
               )}
-              
-              {!imagePreview && !uploading && (
-                <Box sx={{ 
-                  mt: 3, 
-                  p: 4, 
-                  border: '2px dashed #E5E7EB',
-                  borderRadius: '16px',
-                  background: '#F9FAFB'
-                }}>
-                  <CloudUpload sx={{ fontSize: 48, color: '#9CA3AF', mb: 2 }} />
-                  <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                    No image selected. Click the button above to upload.
-                  </Typography>
-                </Box>
-              )}
             </Box>
           </Box>
         );
       
       case 3:
+        // Find readable label for the selected category
+        const categoryLabel = categories.find(c => c.value === category)?.label || category || "Not specified";
+
         return (
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom sx={{ color: '#8B7355', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -678,195 +563,68 @@ export default function ProductForm() {
             </Typography>
             <Grid container spacing={3}>
               <Grid item xs={12} md={8}>
-                <Card sx={{ 
-                  mb: 3,
-                  borderRadius: '16px',
-                  border: '1px solid rgba(139, 115, 85, 0.2)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                }}>
+                <Card sx={{ mb: 3, borderRadius: '16px', border: '1px solid rgba(139, 115, 85, 0.2)', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ color: '#4A4A3A' }}>
                       Product Summary
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Name:
-                        </Typography>
-                        <Typography variant="body1" fontWeight={600}>
-                          {name || "Not specified"}
-                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>Name:</Typography>
+                        <Typography variant="body1" fontWeight={600}>{name || "Not specified"}</Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Price:
-                        </Typography>
-                        <Typography variant="body1" fontWeight={600} color="#8B7355">
-                          ₹{price || "0.00"}
-                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>Price:</Typography>
+                        <Typography variant="body1" fontWeight={600} color="#8B7355">₹{price || "0.00"}</Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Category:
-                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>Category:</Typography>
                         <Chip 
-                          label={category || "Not specified"} 
+                          label={categoryLabel} 
                           size="small"
-                          sx={{ 
-                            background: 'rgba(139, 115, 85, 0.1)',
-                            color: '#8B7355',
-                            fontWeight: 500
-                          }}
+                          sx={{ background: 'rgba(139, 115, 85, 0.1)', color: '#8B7355', fontWeight: 500 }}
                         />
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Stock:
-                        </Typography>
-                        <Typography variant="body1" sx={{ 
-                          fontWeight: 600,
-                          color: parseInt(stock) < 10 ? '#EF4444' : parseInt(stock) < 30 ? '#F59E0B' : '#22C55E'
-                        }}>
+                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>Stock:</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: parseInt(stock) < 10 ? '#EF4444' : '#22C55E' }}>
                           {stock} units
                         </Typography>
                       </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Brand:
-                        </Typography>
-                        <Typography variant="body1">
-                          {brand || "Not specified"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          SKU:
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                          {sku || "Auto-generated"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                          Status:
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Chip 
-                            label={isActive ? "Active" : "Inactive"} 
-                            size="small"
-                            sx={{ 
-                              background: isActive ? '#22C55E15' : '#EF444415',
-                              color: isActive ? '#22C55E' : '#EF4444',
-                              fontWeight: 500
-                            }}
-                          />
-                          {isFeatured && (
-                            <Chip 
-                              label="Featured" 
-                              size="small"
-                              sx={{ 
-                                background: '#FFD70015',
-                                color: '#B45309',
-                                fontWeight: 500
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </Grid>
-                      {description && (
-                        <Grid item xs={12}>
-                          <Divider sx={{ my: 1 }} />
-                          <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>
-                            Description:
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#4A4A3A', lineHeight: 1.6 }}>
-                            {description.substring(0, 150)}...
-                          </Typography>
-                        </Grid>
-                      )}
                     </Grid>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Card sx={{ 
-                  borderRadius: '16px',
-                  border: '1px solid rgba(139, 115, 85, 0.2)',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                }}>
+                <Card sx={{ borderRadius: '16px', border: '1px solid rgba(139, 115, 85, 0.2)' }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ color: '#4A4A3A' }}>
-                      Image Preview
-                    </Typography>
+                    <Typography variant="h6" gutterBottom sx={{ color: '#4A4A3A' }}>Image Preview</Typography>
                     {imagePreview ? (
-                      <CardMedia
-                        component="img"
-                        image={imagePreview}
-                        alt="Product"
-                        sx={{ 
-                          borderRadius: '12px', 
-                          mb: 2, 
-                          height: 200, 
-                          objectFit: 'cover',
-                          border: '1px solid rgba(139, 115, 85, 0.2)'
-                        }}
-                      />
+                      <CardMedia component="img" image={imagePreview} alt="Product" sx={{ borderRadius: '12px', mb: 2, height: 200, objectFit: 'cover' }} />
                     ) : (
-                      <Box sx={{ 
-                        height: 200, 
-                        bgcolor: '#F5F1E8', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        borderRadius: '12px',
-                        mb: 2,
-                        border: '1px dashed rgba(139, 115, 85, 0.3)'
-                      }}>
-                        <Typography variant="body2" color="#8B7355">
-                          No image uploaded
-                        </Typography>
+                      <Box sx={{ height: 200, bgcolor: '#F5F1E8', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                        <Typography variant="body2" color="#8B7355">No image uploaded</Typography>
                       </Box>
                     )}
                   </CardContent>
                 </Card>
               </Grid>
             </Grid>
-            
-            <Box sx={{ 
-              mt: 3, 
-              p: 3, 
-              bgcolor: '#F5F1E8', 
-              borderRadius: '16px',
-              border: '1px solid rgba(139, 115, 85, 0.2)'
-            }}>
+            <Box sx={{ mt: 3, p: 3, bgcolor: '#F5F1E8', borderRadius: '16px', border: '1px solid rgba(139, 115, 85, 0.2)' }}>
               <Typography variant="body2" sx={{ color: '#8B7355', mb: 1, fontWeight: 600 }}>
                 ⚡ Ready to {isEditMode ? 'Update' : 'Publish'}!
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#6B7280' }}>
-                Review all information before submitting. The product will be {isEditMode ? 'updated in' : 'added to'} your store.
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#6B7280', display: 'block', mt: 1, fontStyle: 'italic' }}>
-                Note: If you see a warning about columns, the Active/Featured status might not be saved yet. This will be fixed automatically when the database updates.
               </Typography>
             </Box>
           </Box>
         );
-      
       default:
         return null;
     }
   };
 
-  // Show loading while fetching product
   if (loading && isEditMode) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#F5F1E8'
-      }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F5F1E8' }}>
         <CircularProgress sx={{ color: '#8B7355' }} />
       </Box>
     );
@@ -874,29 +632,10 @@ export default function ProductForm() {
 
   return (
     <Box sx={{ p: 3, background: '#F5F1E8', minHeight: '100vh' }}>
-      <Paper sx={{ 
-        p: 3, 
-        borderRadius: '20px',
-        maxWidth: 1200, 
-        margin: '0 auto',
-        border: '1px solid rgba(139, 115, 85, 0.2)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.05)'
-      }}>
-        {/* Header */}
+      <Paper sx={{ p: 3, borderRadius: '20px', maxWidth: 1200, margin: '0 auto', border: '1px solid rgba(139, 115, 85, 0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.05)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
           <Tooltip title="Back to Dashboard">
-            <IconButton 
-              onClick={() => navigate('/admin')} 
-              sx={{ 
-                mr: 2, 
-                color: '#8B7355',
-                background: 'rgba(139, 115, 85, 0.1)',
-                '&:hover': { 
-                  background: 'rgba(139, 115, 85, 0.2)',
-                  transform: 'translateX(-2px)'
-                }
-              }}
-            >
+            <IconButton onClick={() => navigate('/admin')} sx={{ mr: 2, color: '#8B7355', background: 'rgba(139, 115, 85, 0.1)', '&:hover': { background: 'rgba(139, 115, 85, 0.2)' } }}>
               <ArrowBack />
             </IconButton>
           </Tooltip>
@@ -904,147 +643,33 @@ export default function ProductForm() {
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#4A4A3A' }}>
               {isEditMode ? '✏️ Edit Product' : '🚀 Add New Product'}
             </Typography>
-            <Typography variant="body1" sx={{ color: '#6B6B5A' }}>
-              {isEditMode 
-                ? `Editing: ${name || 'Product'}` 
-                : 'Create a new product listing for your store'
-              }
-            </Typography>
           </Box>
         </Box>
         
-        {/* Stepper */}
-        <Stepper 
-          activeStep={activeStep} 
-          sx={{ 
-            mb: 4,
-            '& .MuiStepLabel-root .Mui-active': {
-              color: '#8B7355',
-            },
-            '& .MuiStepLabel-root .Mui-completed': {
-              color: '#22C55E',
-            },
-          }}
-        >
+        <Stepper activeStep={activeStep} sx={{ mb: 4, '& .MuiStepLabel-root .Mui-active': { color: '#8B7355' } }}>
           {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel>{label}</StepLabel>
-            </Step>
+            <Step key={label}><StepLabel>{label}</StepLabel></Step>
           ))}
         </Stepper>
         
-        {/* Form Content */}
         <form onSubmit={handleSubmit}>
           {renderStepContent(activeStep)}
-          
-          {/* Navigation Buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-            <Button
-              disabled={activeStep === 0 || loading}
-              onClick={handleBack}
-              sx={{ 
-                color: '#6B6B5A',
-                fontWeight: 600,
-                '&:hover': { 
-                  background: 'rgba(139, 115, 85, 0.1)',
-                  color: '#8B7355'
-                }
-              }}
-            >
-              Back
-            </Button>
-            
+            <Button disabled={activeStep === 0 || loading} onClick={handleBack} sx={{ color: '#6B6B5A', fontWeight: 600 }}>Back</Button>
             <Box>
               {activeStep === steps.length - 1 ? (
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={<Save />}
-                  disabled={loading || uploading}
-                  sx={{
-                    background: 'linear-gradient(135deg, #8B7355 0%, #6B6B5A 100%)',
-                    color: 'white',
-                    px: 5,
-                    py: 1.5,
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 14px rgba(139, 115, 85, 0.4)',
-                    '&:hover': { 
-                      background: 'linear-gradient(135deg, #755F47 0%, #4A4A3A 100%)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(139, 115, 85, 0.5)'
-                    },
-                    '&.Mui-disabled': {
-                      background: 'linear-gradient(135deg, #C4B5A0 0%, #A5A592 100%)',
-                      color: '#E5E7EB'
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CircularProgress size={20} color="inherit" />
-                      {isEditMode ? 'Updating...' : 'Creating...'}
-                    </Box>
-                  ) : uploading ? (
-                    'Uploading Image...'
-                  ) : isEditMode ? (
-                    '✅ Update Product'
-                  ) : (
-                    '🚀 Create Product'
-                  )}
+                <Button type="submit" variant="contained" startIcon={<Save />} disabled={loading || uploading} sx={{ background: 'linear-gradient(135deg, #8B7355 0%, #6B6B5A 100%)', px: 5, py: 1.5, borderRadius: '12px' }}>
+                  {loading ? 'Processing...' : isEditMode ? '✅ Update Product' : '🚀 Create Product'}
                 </Button>
               ) : (
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  sx={{
-                    background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
-                    color: 'white',
-                    px: 5,
-                    py: 1.5,
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
-                    '&:hover': { 
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(59, 130, 246, 0.5)'
-                    }
-                  }}
-                >
-                  Continue
-                </Button>
+                <Button variant="contained" onClick={handleNext} sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', px: 5, py: 1.5, borderRadius: '12px' }}>Continue</Button>
               )}
             </Box>
           </Box>
         </form>
       </Paper>
-      
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ 
-            width: '100%',
-            background: 'white',
-            color: '#4A4A3A',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-            borderRadius: '12px',
-            border: '1px solid rgba(139, 115, 85, 0.2)',
-            '& .MuiAlert-icon': {
-              color: snackbar.severity === 'success' ? '#22C55E' : 
-                     snackbar.severity === 'warning' ? '#F59E0B' : '#EF4444'
-            }
-          }}
-        >
-          {snackbar.message}
-        </Alert>
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%', borderRadius: '12px' }}>{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );
