@@ -1,55 +1,54 @@
-/* index.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&display=swap');
+/* Import Bluorng's Font */
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap');
 
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', sans-serif;
-  background-color: #FFFFFF;
-  color: #000000;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Assistant', sans-serif; /* The exact font they use */
+  background-color: #ffffff;
+  overflow-x: hidden;
 }
 
-/* THE BLUORNG MARQUEE ANIMATION */
-@keyframes scrollLeft {
+/* MARQUEE ANIMATION (The scrolling text at top) */
+.marquee-container {
+  background: #000;
+  color: #fff;
+  height: 32px;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.marquee-content {
+  display: flex;
+  animation: scroll 20s linear infinite;
+  white-space: nowrap;
+}
+
+.marquee-item {
+  margin-right: 50px;
+}
+
+@keyframes scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
-.marquee-container {
-  overflow: hidden;
-  white-space: nowrap;
-  background: #000; /* Black background */
-  padding: 12px 0;
+/* HIDE SCROLLBAR BUT KEEP FUNCTIONALITY */
+::-webkit-scrollbar {
+  width: 6px;
 }
-
-.marquee-content {
-  display: inline-block;
-  animation: scrollLeft 20s linear infinite;
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
 }
-
-.marquee-text {
-  display: inline-block;
-  color: #FFF;
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 14px;
-  letter-spacing: 2px;
-  margin-right: 50px;
-}
-
-/* FADE IN ANIMATION FOR IMAGES */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeInUp 0.8s ease-out forwards;
+::-webkit-scrollbar-thumb {
+  background: #888; 
 }

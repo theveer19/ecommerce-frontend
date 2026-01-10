@@ -4,6 +4,7 @@
   "private": true,
 
   "homepage": "https://onet.co.in",
+  
 
   "dependencies": {
     "@emotion/react": "^11.14.0",
