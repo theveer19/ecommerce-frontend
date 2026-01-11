@@ -67,7 +67,7 @@ export default function Navbar({ session, onLogout, userRole }) {
             width: 100%;
           }
 
-          /* 3D Menu Icon Style - Only visible when navbar is white */
+          /* 3D Menu Icon Style */
           .menu-icon-3d {
              filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));
              transition: transform 0.1s ease;
@@ -82,7 +82,6 @@ export default function Navbar({ session, onLogout, userRole }) {
       {/* --- NAVBAR HEADER --- */}
       <header style={{
         position: 'fixed',
-        // ✅ FIXED: Pushed down by 35px to clear the Announcement Bar
         top: '35px', 
         left: 0,
         right: 0,
@@ -105,8 +104,8 @@ export default function Navbar({ session, onLogout, userRole }) {
                 display: { xs: 'flex', md: 'none' }, 
                 color: iconColor, 
                 mr: 1,
-                '&:focus': { outline: 'none' }, // Remove default blue focus
-                '& .MuiTouchRipple-root': { color: 'rgba(0,0,0,0.2)' } // Change ripple color
+                '&:focus': { outline: 'none' }, 
+                '& .MuiTouchRipple-root': { color: 'rgba(0,0,0,0.2)' } 
               }}
             >
               {/* 3D STYLISH MENU ICON */}
@@ -196,7 +195,6 @@ export default function Navbar({ session, onLogout, userRole }) {
       </header>
 
       {/* --- DESKTOP MEGA MENU --- */}
-      {/* Pushed down to 95px (35px Announcement + 60px Navbar) */}
       <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '95px', left: 0, right: 0, zIndex: 1400 }}>
         <Box 
           onMouseEnter={() => setApparelOpen(true)}
@@ -238,7 +236,7 @@ export default function Navbar({ session, onLogout, userRole }) {
         </Box>
       </Drawer>
 
-      {/* --- MOBILE DRAWER --- */}
+      {/* --- MOBILE DRAWER (UPDATED) --- */}
       <Drawer anchor="left" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} PaperProps={{ sx: { width: '85%', maxWidth: '300px' } }} sx={{ zIndex: 1600 }}>
         <Box sx={{ p: 4 }}>
           {/* Logo & Close Button */}
@@ -255,7 +253,7 @@ export default function Navbar({ session, onLogout, userRole }) {
             {/* 🟢 MOBILE APPAREL DROPDOWN */}
             <ListItem button onClick={() => setMobileApparelOpen(!mobileApparelOpen)} sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <ListItemText primary="APPAREL" primaryTypographyProps={styles.mobileLink} />
-              {mobileApparelOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              {mobileApparelOpen ? <ChevronUp size={20} color="black" /> : <ChevronDown size={20} color="black" />}
             </ListItem>
             
             <Collapse in={mobileApparelOpen} timeout="auto" unmountOnExit>
@@ -277,9 +275,13 @@ export default function Navbar({ session, onLogout, userRole }) {
             </ListItem>
             
             {session ? (
-              <ListItem button onClick={onLogout}><LogOut size={18} style={{ marginRight: 10 }} /> LOGOUT</ListItem>
+              <ListItem button onClick={onLogout}><LogOut size={18} style={{ marginRight: 10, color: 'black' }} /> 
+                <ListItemText primary="LOGOUT" primaryTypographyProps={styles.mobileLink} />
+              </ListItem>
             ) : (
-              <ListItem button component={Link} to="/login"><User size={18} style={{ marginRight: 10 }} /> LOGIN</ListItem>
+              <ListItem button component={Link} to="/login"><User size={18} style={{ marginRight: 10, color: 'black' }} /> 
+                <ListItemText primary="LOGIN" primaryTypographyProps={styles.mobileLink} />
+              </ListItem>
             )}
           </List>
         </Box>
@@ -322,6 +324,16 @@ const styles = {
   menuList: { display: 'flex', flexDirection: 'column', gap: '10px' },
   menuItem: { fontSize: '12px', fontWeight: 500, color: '#333', textDecoration: 'none', letterSpacing: '0.5px', transition: '0.2s', '&:hover': { color: '#000', paddingLeft: '5px' } },
   
-  mobileLink: { fontWeight: 800, fontSize: '16px', letterSpacing: '0.5px' },
+  // 🟢 UPDATED MOBILE LINK STYLE (Black, 3D Effect)
+  mobileLink: { 
+    fontWeight: 900, 
+    fontSize: '18px', 
+    letterSpacing: '1px', 
+    color: '#000', // Forces Black color
+    textTransform: 'uppercase',
+    fontFamily: 'Assistant, sans-serif',
+    textShadow: '1px 1px 0px rgba(0,0,0,0.1)' // Subtle 3D Effect
+  },
+  
   mobileSubLink: { fontWeight: 600, fontSize: '12px', letterSpacing: '1px', color: '#555', textTransform: 'uppercase' }
 };
