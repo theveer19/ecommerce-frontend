@@ -1,11 +1,10 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useEffect, useState, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Box, CircularProgress, Typography } from '@mui/material';
-import { Security } from "@mui/icons-material"; // Icon for Admin Button
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { Security } from "@mui/icons-material";
 
-// --- CORE COMPONENTS ---
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -13,14 +12,14 @@ import AnnouncementBar from "./components/AnnouncementBar";
 import LoadingScreen from "./components/LoadingScreen";
 import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalStyles from "./components/GlobalStyles";
-import { supabase } from "./supabase/supabaseClient";
 import ScrollToTop from "./components/ScrollToTop";
 
-// --- CONTEXTS ---
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 
-// --- LAZY LOADED PAGES ---
+import { supabase } from "./supabase/supabaseClient";
+
+/* ------------------ LAZY PAGES ------------------ */
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ProductList = lazy(() => import("./components/ProductList"));
 const CategoriesPage = lazy(() => import("./pages/CategoriesPage"));
@@ -32,269 +31,193 @@ const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
-const ContactPage = lazy(() => import("./pages/ContactPage")); 
+const ContactPage = lazy(() => import("./pages/ContactPage"));
 
-// --- ADMIN PAGES ---
-const AdminPage = lazy(() => import("./pages/AdminPage")); 
-const AdminOrdersPage = lazy(() => import("./pages/AdminOrders")); // Kept your specific import path
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminOrdersPage = lazy(() => import("./pages/AdminOrders"));
 const AdminOrderDetailsPage = lazy(() => import("./pages/AdminOrderDetailsPage"));
-const ProductForm = lazy(() => import("./components/ProductForm")); 
+const ProductForm = lazy(() => import("./components/ProductForm"));
 
-// --- PREMIUM THEME CONFIGURATION ---
+/* ------------------ THEME ------------------ */
 const theme = createTheme({
   palette: {
-    primary: { main: '#000000', contrastText: '#FFFFFF' },
-    secondary: { main: '#FFFFFF', contrastText: '#000000' },
-    background: { default: '#F9FAFB', paper: '#FFFFFF' }, // Softer background
-    text: { primary: '#111827', secondary: '#6B7280' }
+    primary: { main: "#000" },
+    background: { default: "#F9FAFB", paper: "#FFF" },
   },
   typography: {
-    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontWeight: 900, letterSpacing: '-0.02em' },
-    h2: { fontWeight: 800, letterSpacing: '-0.01em' },
-    h3: { fontWeight: 700 },
-    button: { fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
+    fontFamily: '"Inter", sans-serif',
+    button: { fontWeight: 700, letterSpacing: "0.05em" },
   },
-  shape: { borderRadius: 12 }, // Modern rounded corners
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '50px', // Pill buttons
-          padding: '12px 28px',
-          boxShadow: 'none',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 10px 20px -10px rgba(0,0,0,0.2)' },
-        },
-        contained: { backgroundColor: '#000', color: '#fff' },
-        outlined: { borderWidth: '1.5px', '&:hover': { borderWidth: '1.5px' } }
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: { backgroundImage: 'none', transition: 'box-shadow 0.3s ease' }
-      }
-    }
-  },
+  shape: { borderRadius: 12 },
 });
 
-// --- STYLED ADMIN BUTTON (Glassmorphism) ---
-const AdminFloatingButton = ({ userRole }) => {
-  if (userRole !== 'admin') return null;
-  
+/* ------------------ ADMIN FLOATING BUTTON ------------------ */
+const AdminFloatingButton = ({ role }) => {
+  if (role !== "admin") return null;
+
   return (
     <Box
-      onClick={() => window.location.href = "/admin"}
+      onClick={() => (window.location.href = "/admin")}
       sx={{
-        position: 'fixed',
+        position: "fixed",
         bottom: 30,
         right: 30,
         zIndex: 9999,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         gap: 1.5,
-        padding: '12px 24px',
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '50px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        '&:hover': {
-          transform: 'scale(1.05) translateY(-5px)',
-          background: '#000000',
-          boxShadow: '0 25px 50px rgba(0,0,0,0.4)',
-        }
+        px: 3,
+        py: 1.5,
+        borderRadius: "50px",
+        cursor: "pointer",
+        background: "#000",
+        color: "#fff",
+        boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+        "&:hover": { transform: "scale(1.05)" },
       }}
-    >
-      <Security sx={{ color: '#4ade80', fontSize: 20 }} />
-      <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '12px', letterSpacing: '1px' }}>
-        ADMIN COMMAND
-      </Typography>
-    </Box>
+    ></Box>
   );
 };
 
-// --- CUSTOM FALLBACK LOADER ---
+/* ------------------ PAGE LOADER ------------------ */
 const PageLoader = () => (
-  <Box sx={{ 
-    display: 'flex', 
-    flexDirection: 'column', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: '80vh', 
-    gap: 3 
-  }}>
-    <CircularProgress size={50} thickness={2} sx={{ color: 'black' }} />
-    <Typography sx={{ 
-      fontSize: '14px', 
-      fontWeight: 600, 
-      color: '#999', 
-      letterSpacing: '2px',
-      animation: 'pulse 2s infinite' 
-    }}>
-      LOADING EXPERIENCE...
+  <Box
+    sx={{
+      minHeight: "70vh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 2,
+    }}
+  >
+    <CircularProgress sx={{ color: "#000" }} />
+    <Typography sx={{ fontSize: 13, letterSpacing: 2, color: "#999" }}>
+      LOADING...
     </Typography>
-    <style>{`@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }`}</style>
   </Box>
 );
 
+/* ------------------ APP ------------------ */
 function App() {
   const [session, setSession] = useState(null);
-  const [userRole, setUserRole] = useState('customer');
-  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState("customer");
+  const [authReady, setAuthReady] = useState(false);
 
+  /* -------- AUTH INIT -------- */
   useEffect(() => {
     let mounted = true;
 
-    // Safety Timeout
-    const loadingTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn("Loading timeout reached. Forcing app render.");
-        setLoading(false);
-      }
-    }, 5000); 
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    // --- 📱 SAFE BACK BUTTON LOGIC ---
-    const onLocationChange = () => {
-      if (window.location.pathname === '/' && !window.history.state?.pushed) {
-        window.history.pushState({ pushed: true }, "", "/");
-      }
-    };
-    const backButtonTimer = setTimeout(onLocationChange, 1000); 
+      if (!mounted) return;
 
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted) return;
-        if (session) {
-          setSession(session);
-          await fetchUserRole(session.user.id);
-        }
-      } catch (err) {
-        console.error("Auth init failed", err);
-      } finally {
-        if (mounted) setLoading(false); 
+      setSession(session);
+
+      if (session?.user?.id) {
+        await fetchUserRole(session.user.id);
       }
+
+      setAuthReady(true);
     };
 
-    initAuth();
+    init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        if (session) {
-          setSession(session);
-          await fetchUserRole(session.user.id);
-        } else {
-          setSession(null);
-          setUserRole('customer');
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
+      setSession(session);
+
+      if (session?.user?.id) {
+        await fetchUserRole(session.user.id);
+      } else {
+        setUserRole("customer");
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(loadingTimeout);
-      clearTimeout(backButtonTimer);
-      if (subscription) subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
+  /* -------- ROLE FETCH -------- */
   const fetchUserRole = async (userId) => {
-    try {
-      // Use 'profiles' table as per your new logic
-      const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
-      
-      if (data) {
-        setUserRole(data.role);
-      } else {
-        // Fallback logic if needed, but primarily relying on profiles now
-        const { data: userData } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
-        if (userData) setUserRole(userData.role);
-        
-        // Ensure profile exists logic
-        await supabase.from("profiles").insert({
-          id: userId,
-          email: session?.user?.email || '',
-          role: 'customer',
-          created_at: new Date().toISOString()
-        }).select();
-      }
-    } catch (err) {
-      console.error("Role fetch error", err);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Role fetch failed:", error.message);
+      setUserRole("customer");
+      return;
     }
+
+    setUserRole(data?.role || "customer");
   };
 
-  const handleLogin = (sessionData) => {
-    setSession(sessionData);
-    if (sessionData?.user?.id) fetchUserRole(sessionData.user.id);
-  };
-
+  /* -------- LOGOUT -------- */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    setUserRole('customer');
+    setUserRole("customer");
     window.location.href = "/";
   };
 
-  if (loading) return <LoadingScreen />;
+  /* -------- BLOCK RENDER UNTIL READY -------- */
+  if (!authReady) return <LoadingScreen />;
 
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
-        <GlobalStyles />
         <CssBaseline />
+        <GlobalStyles />
+
         <WishlistProvider>
           <CartProvider>
             <Router>
               <ScrollToTop />
-              <Box sx={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                bgcolor: 'background.default',
-                animation: 'fadeIn 0.8s ease-out'
-              }}>
-                <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
-                
-                <AnnouncementBar />
-                <Navbar session={session} userRole={userRole} onLogout={handleLogout} />
-                <AdminFloatingButton userRole={userRole} />
 
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<HomePage session={session} />} />
-                    <Route path="/products" element={<ProductList session={session} />} />
-                    <Route path="/categories" element={<CategoriesPage session={session} />} />
-                    <Route path="/product/:id" element={<ProductDetailsPage session={session} />} />
-                    <Route path="/about" element={<AboutUsPage session={session} />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    
-                    <Route path="/login" element={session ? <Navigate to="/" replace /> : <Auth onLogin={handleLogin} />} />
+              <AnnouncementBar />
+              <Navbar session={session} userRole={userRole} onLogout={handleLogout} />
+              <AdminFloatingButton role={userRole} />
 
-                    <Route path="/cart" element={<CartPage session={session} />} />
-                    <Route path="/wishlist" element={session ? <WishlistPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/checkout" element={session ? <CheckoutPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/thank-you" element={<ThankYouPage session={session} />} />
-                    <Route path="/orders" element={session ? <OrderPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/orders/:id" element={session ? <UserOrderDetailsPage session={session} /> : <Navigate to="/login" replace />} />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<HomePage session={session} />} />
+                  <Route path="/products" element={<ProductList session={session} />} />
+                  <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/product/:id" element={<ProductDetailsPage />} />
+                  <Route path="/about" element={<AboutUsPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
 
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={userRole === "admin" ? <AdminPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/orders" element={userRole === "admin" ? <AdminOrdersPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/orders/:id" element={userRole === "admin" ? <AdminOrderDetailsPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/products/new" element={userRole === "admin" ? <ProductForm session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/products/edit/:id" element={userRole === "admin" ? <ProductForm session={session} /> : <Navigate to="/" replace />} />
+                  <Route path="/login" element={session ? <Navigate to="/" /> : <Auth />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/wishlist" element={session ? <WishlistPage /> : <Navigate to="/login" />} />
+                  <Route path="/checkout" element={session ? <CheckoutPage /> : <Navigate to="/login" />} />
+                  <Route path="/thank-you" element={<ThankYouPage />} />
+                  <Route path="/orders" element={session ? <OrderPage /> : <Navigate to="/login" />} />
+                  <Route path="/orders/:id" element={session ? <UserOrderDetailsPage /> : <Navigate to="/login" />} />
 
-                    <Route path="/test-route" element={<div style={{ padding: '100px', textAlign: 'center' }}><h1>TEST ROUTE</h1><p>This route should always be visible</p></div>} />
+                  {/* ADMIN */}
+                  <Route path="/admin" element={userRole === "admin" ? <AdminPage /> : <Navigate to="/" />} />
+                  <Route path="/admin/orders" element={userRole === "admin" ? <AdminOrdersPage /> : <Navigate to="/" />} />
+                  <Route path="/admin/orders/:id" element={userRole === "admin" ? <AdminOrderDetailsPage /> : <Navigate to="/" />} />
+                  <Route path="/admin/products/new" element={userRole === "admin" ? <ProductForm /> : <Navigate to="/" />} />
+                  <Route path="/admin/products/edit/:id" element={userRole === "admin" ? <ProductForm /> : <Navigate to="/" />} />
 
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </Suspense>
 
-                <Footer />
-              </Box>
+              <Footer />
             </Router>
           </CartProvider>
         </WishlistProvider>

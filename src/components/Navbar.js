@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingBag, Search, X, Menu, User, LogOut } from "lucide-react";
+import { ShoppingBag, Search, X, Menu, User, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { Box, Container, Collapse, Drawer, Input, IconButton, List, ListItem, ListItemText } from "@mui/material";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar({ session, onLogout, userRole }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [apparelOpen, setApparelOpen] = useState(false);
+  const [apparelOpen, setApparelOpen] = useState(false); // Desktop Hover
+  const [mobileApparelOpen, setMobileApparelOpen] = useState(false); // Mobile Click
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +35,7 @@ export default function Navbar({ session, onLogout, userRole }) {
     }
   };
 
-  // --- 🎨 COLOR LOGIC (Black & White) ---
+  // --- 🎨 COLOR LOGIC ---
   const isTransparent = isHomePage && !isScrolled;
   const textColor = isTransparent ? '#FFFFFF' : '#000000'; 
   const iconColor = isTransparent ? '#FFFFFF' : '#000000';
@@ -44,6 +45,7 @@ export default function Navbar({ session, onLogout, userRole }) {
     <>
       <style>
         {`
+          /* Minimalist Hover Line */
           .nav-link-hover {
             position: relative;
             transition: opacity 0.3s ease;
@@ -64,13 +66,23 @@ export default function Navbar({ session, onLogout, userRole }) {
           .nav-link-hover:hover::after {
             width: 100%;
           }
+
+          /* 3D Menu Icon Style - Only visible when navbar is white */
+          .menu-icon-3d {
+             filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));
+             transition: transform 0.1s ease;
+          }
+          .menu-icon-3d:active {
+             transform: translate(1px, 1px);
+             filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.3));
+          }
         `}
       </style>
 
       {/* --- NAVBAR HEADER --- */}
       <header style={{
         position: 'fixed',
-        // ✅ FIXED: Pushed down by 35px to sit below Announcement Bar
+        // ✅ FIXED: Pushed down by 35px to clear the Announcement Bar
         top: '35px', 
         left: 0,
         right: 0,
@@ -89,11 +101,19 @@ export default function Navbar({ session, onLogout, userRole }) {
           <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: 'auto', md: '200px' } }}>
             <IconButton 
               onClick={() => setMobileMenuOpen(true)}
-              sx={{ display: { xs: 'flex', md: 'none' }, color: iconColor, mr: 1 }}
+              sx={{ 
+                display: { xs: 'flex', md: 'none' }, 
+                color: iconColor, 
+                mr: 1,
+                '&:focus': { outline: 'none' }, // Remove default blue focus
+                '& .MuiTouchRipple-root': { color: 'rgba(0,0,0,0.2)' } // Change ripple color
+              }}
             >
-              <Menu size={20} />
+              {/* 3D STYLISH MENU ICON */}
+              <Menu size={24} className={!isTransparent ? "menu-icon-3d" : ""} strokeWidth={2.5} />
             </IconButton>
 
+            {/* LOGO */}
             <Link to="/" style={styles.logo(isTransparent)}>
               OneT
             </Link>
@@ -175,7 +195,7 @@ export default function Navbar({ session, onLogout, userRole }) {
         </Container>
       </header>
 
-      {/* --- MEGA MENU --- */}
+      {/* --- DESKTOP MEGA MENU --- */}
       {/* Pushed down to 95px (35px Announcement + 60px Navbar) */}
       <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '95px', left: 0, right: 0, zIndex: 1400 }}>
         <Box 
@@ -221,14 +241,41 @@ export default function Navbar({ session, onLogout, userRole }) {
       {/* --- MOBILE DRAWER --- */}
       <Drawer anchor="left" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} PaperProps={{ sx: { width: '85%', maxWidth: '300px' } }} sx={{ zIndex: 1600 }}>
         <Box sx={{ p: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+          {/* Logo & Close Button */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Link to="/" style={{...styles.logo(false), color: 'black'}} onClick={() => setMobileMenuOpen(false)}>OneT</Link>
-            <IconButton onClick={() => setMobileMenuOpen(false)}><X size={24} /></IconButton>
+            <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: '#000' }}><X size={24} /></IconButton>
           </Box>
+          
           <List>
-            <ListItem button component={Link} to="/products?sort=new" onClick={() => setMobileMenuOpen(false)}><ListItemText primary="NEW IN" primaryTypographyProps={styles.mobileLink} /></ListItem>
-            <ListItem button onClick={() => { setApparelOpen(true); setMobileMenuOpen(false); }}><ListItemText primary="APPAREL" primaryTypographyProps={styles.mobileLink} /></ListItem>
-            <ListItem button component={Link} to="/contact" onClick={() => setMobileMenuOpen(false)}><ListItemText primary="CONTACT" primaryTypographyProps={styles.mobileLink} /></ListItem>
+            <ListItem button component={Link} to="/products?sort=new" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemText primary="NEW IN" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+            
+            {/* 🟢 MOBILE APPAREL DROPDOWN */}
+            <ListItem button onClick={() => setMobileApparelOpen(!mobileApparelOpen)} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <ListItemText primary="APPAREL" primaryTypographyProps={styles.mobileLink} />
+              {mobileApparelOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </ListItem>
+            
+            <Collapse in={mobileApparelOpen} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding sx={{ pl: 2, borderLeft: '2px solid #eee' }}>
+                {['TSHIRTS', 'HOODIES', 'JACKETS', 'PANTS', 'CARGOS', 'ACCESSORIES'].map((item) => (
+                  <ListItem key={item} button component={Link} to={`/products?cat=${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} sx={{ py: 0.5 }}>
+                    <ListItemText primary={item} primaryTypographyProps={styles.mobileSubLink} />
+                  </ListItem>
+                ))}
+              </List>
+            </Collapse>
+
+            <ListItem button component={Link} to="/about" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemText primary="ABOUT" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+
+            <ListItem button component={Link} to="/contact" onClick={() => setMobileMenuOpen(false)}>
+              <ListItemText primary="CONTACT" primaryTypographyProps={styles.mobileLink} />
+            </ListItem>
+            
             {session ? (
               <ListItem button onClick={onLogout}><LogOut size={18} style={{ marginRight: 10 }} /> LOGOUT</ListItem>
             ) : (
@@ -274,5 +321,7 @@ const styles = {
   menuHeader: { fontSize: '10px', fontWeight: 700, color: '#888', marginBottom: '20px', letterSpacing: '1px', textTransform: 'uppercase' },
   menuList: { display: 'flex', flexDirection: 'column', gap: '10px' },
   menuItem: { fontSize: '12px', fontWeight: 500, color: '#333', textDecoration: 'none', letterSpacing: '0.5px', transition: '0.2s', '&:hover': { color: '#000', paddingLeft: '5px' } },
-  mobileLink: { fontWeight: 800, fontSize: '18px', letterSpacing: '-0.5px' },
+  
+  mobileLink: { fontWeight: 800, fontSize: '16px', letterSpacing: '0.5px' },
+  mobileSubLink: { fontWeight: 600, fontSize: '12px', letterSpacing: '1px', color: '#555', textTransform: 'uppercase' }
 };
