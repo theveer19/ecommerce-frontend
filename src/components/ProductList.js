@@ -16,11 +16,9 @@ import { Search, Close, Refresh } from "@mui/icons-material";
 export default function ProductList({ session }) {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
@@ -29,20 +27,25 @@ export default function ProductList({ session }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const categories = useMemo(
-    () => ["all", "T-Shirts", "Hoodies", "Pants", "Jackets", "Accessories"],
-    []
-  );
+  /* ---------- CATEGORIES (NORMALIZED) ---------- */
+  const categories = useMemo(() => [
+    { label: "ALL", value: "all" },
+    { label: "T-SHIRTS", value: "t-shirts" },
+    { label: "HOODIES", value: "hoodies" },
+    { label: "PANTS", value: "pants" },
+    { label: "JACKETS", value: "jackets" },
+    { label: "ACCESSORIES", value: "accessories" },
+  ], []);
 
-  /* ---------------- URL PARAMS ---------------- */
+  /* ---------- URL → STATE ---------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get("search")) setSearchTerm(params.get("search"));
-    if (params.get("cat")) setSelectedCategory(params.get("cat"));
-    if (params.get("sort")) setSortBy(params.get("sort"));
+    setSearchTerm(params.get("search") || "");
+    setSelectedCategory(params.get("cat") || "all");
+    setSortBy(params.get("sort") || "newest");
   }, [location.search]);
 
-  /* ---------------- FETCH PRODUCTS ---------------- */
+  /* ---------- FETCH PRODUCTS ---------- */
   const fetchProducts = async () => {
     setLoading(true);
     setError(false);
@@ -53,14 +56,19 @@ export default function ProductList({ session }) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Product fetch failed:", error.message);
+      console.error("Product fetch failed:", error);
       setError(true);
       setLoading(false);
       return;
     }
 
-    setProducts(data || []);
-    setFilteredProducts(data || []);
+    const normalized = (data || []).map(p => ({
+      ...p,
+      category_normalized: p.category?.trim().toLowerCase()
+    }));
+
+    setProducts(normalized);
+    setFilteredProducts(normalized);
     setLoading(false);
   };
 
@@ -68,35 +76,35 @@ export default function ProductList({ session }) {
     fetchProducts();
   }, []);
 
-  /* ---------------- FILTER LOGIC ---------------- */
+  /* ---------- FILTER LOGIC ---------- */
   useEffect(() => {
     let result = [...products];
 
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       result = result.filter(
-        (p) =>
-          p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+        p =>
+          p.name?.toLowerCase().includes(term) ||
+          p.category_normalized?.includes(term)
       );
     }
 
     if (selectedCategory !== "all") {
       result = result.filter(
-        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+        p => p.category_normalized === selectedCategory
       );
     }
 
     if (sortBy === "price-low") result.sort((a, b) => a.price - b.price);
     if (sortBy === "price-high") result.sort((a, b) => b.price - a.price);
-    if (sortBy === "newest")
-      result.sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      );
+    if (sortBy === "newest") {
+      result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 
     setFilteredProducts(result);
   }, [products, searchTerm, selectedCategory, sortBy]);
 
-  /* ---------------- URL SYNC ---------------- */
+  /* ---------- STATE → URL ---------- */
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchTerm) params.set("search", searchTerm);
@@ -104,48 +112,39 @@ export default function ProductList({ session }) {
     if (sortBy !== "newest") params.set("sort", sortBy);
 
     navigate(`/products${params.toString() ? "?" + params : ""}`, {
-      replace: true,
+      replace: true
     });
   }, [searchTerm, selectedCategory, sortBy, navigate]);
 
-  /* ---------------- LOADING UI ---------------- */
+  /* ---------- LOADING ---------- */
   if (loading) {
     return (
       <Box sx={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <CircularProgress size={30} sx={{ color: "black" }} />
+        <CircularProgress sx={{ color: "black" }} />
       </Box>
     );
   }
 
-  /* ---------------- ERROR UI ---------------- */
+  /* ---------- ERROR ---------- */
   if (error) {
     return (
       <Box sx={{ textAlign: "center", py: 12 }}>
-        <Typography sx={{ fontWeight: 900, letterSpacing: "1px" }}>
+        <Typography sx={{ fontWeight: 900 }}>
           FAILED TO LOAD PRODUCTS
         </Typography>
-        <Typography sx={{ fontSize: 12, color: "#777", mt: 1 }}>
-          Network issue or server unavailable
-        </Typography>
-        <Button
-          startIcon={<Refresh />}
-          onClick={fetchProducts}
-          sx={{ mt: 3 }}
-          variant="contained"
-        >
+        <Button startIcon={<Refresh />} onClick={fetchProducts} sx={{ mt: 3 }} variant="contained">
           Retry
         </Button>
       </Box>
     );
   }
 
-  /* ---------------- MAIN UI ---------------- */
+  /* ---------- UI ---------- */
   return (
-    <Box sx={{ bgcolor: "#FFF", minHeight: "100vh" }}>
-      {/* HEADER */}
-      <Box sx={styles.pageHeader}>
+    <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
+      <Box sx={{ pt: 10, pb: 3, textAlign: "center" }}>
         <Container maxWidth="xl">
-          <Typography sx={styles.collectionTitle}>
+          <Typography sx={{ fontSize: 26, fontWeight: 900 }}>
             {searchTerm
               ? `SEARCH: "${searchTerm}"`
               : selectedCategory === "all"
@@ -155,84 +154,72 @@ export default function ProductList({ session }) {
         </Container>
       </Box>
 
-      {/* TOOLBAR */}
-      <Box sx={styles.stickyBarWrapper}>
-        <Box sx={styles.stickyBar}>
-          <Container maxWidth="xl">
-            <div style={styles.barFlex}>
-              <div style={styles.categoriesWrapper}>
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat.toLowerCase())}
-                    style={{
-                      ...styles.catBtn,
-                      opacity:
-                        selectedCategory === cat.toLowerCase() ? 1 : 0.4,
-                      fontWeight:
-                        selectedCategory === cat.toLowerCase() ? 800 : 600,
-                    }}
-                  >
-                    {cat.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+      <Box sx={{ position: "sticky", top: 75, zIndex: 90, bgcolor: "#fff", borderBottom: "1px solid #eee" }}>
+        <Container maxWidth="xl" sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {categories.map(cat => (
+              <button
+                key={cat.value}
+                onClick={() => setSelectedCategory(cat.value)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontWeight: selectedCategory === cat.value ? 800 : 600,
+                  opacity: selectedCategory === cat.value ? 1 : 0.4
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </Box>
 
-              <div style={styles.actionsWrapper}>
-                <div style={styles.searchContainer}>
-                  <Collapse in={showSearch || searchTerm}>
-                    <input
-                      placeholder="SEARCH..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={styles.minimalInput}
-                    />
-                  </Collapse>
-                  <IconButton
-                    onClick={() =>
-                      searchTerm ? setSearchTerm("") : setShowSearch(!showSearch)
-                    }
-                  >
-                    {searchTerm || showSearch ? <Close /> : <Search />}
-                  </IconButton>
-                </div>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Collapse in={showSearch || searchTerm}>
+              <input
+                placeholder="SEARCH..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ border: "none", borderBottom: "1px solid black" }}
+              />
+            </Collapse>
 
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  style={styles.minimalSelect}
-                >
-                  <option value="newest">NEWEST</option>
-                  <option value="price-low">LOW PRICE</option>
-                  <option value="price-high">HIGH PRICE</option>
-                </select>
-              </div>
-            </div>
-          </Container>
-        </Box>
+            <IconButton
+              onClick={() =>
+                searchTerm ? setSearchTerm("") : setShowSearch(!showSearch)
+              }
+            >
+              {searchTerm || showSearch ? <Close /> : <Search />}
+            </IconButton>
+
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              style={{ border: "none" }}
+            >
+              <option value="newest">NEWEST</option>
+              <option value="price-low">LOW PRICE</option>
+              <option value="price-high">HIGH PRICE</option>
+            </select>
+          </Box>
+        </Container>
       </Box>
 
-      {/* GRID */}
-      <Container maxWidth="xl" sx={{ pb: 10 }}>
+      <Container maxWidth="xl" sx={{ py: 8 }}>
         {filteredProducts.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 10 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: 12, color: "#999" }}>
-              NO PRODUCTS FOUND
-            </Typography>
-          </Box>
+          <Typography align="center" sx={{ color: "#999", fontWeight: 700 }}>
+            NO PRODUCTS FOUND
+          </Typography>
         ) : (
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
-                md: "repeat(4, 1fr)",
-              },
-              gap: 2,
+              gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(4,1fr)" },
+              gap: 2
             }}
           >
-            {filteredProducts.map((product) => (
+            {filteredProducts.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -245,18 +232,3 @@ export default function ProductList({ session }) {
     </Box>
   );
 }
-
-/* ---------------- STYLES ---------------- */
-const styles = {
-  pageHeader: { pt: 10, pb: 3, textAlign: "center" },
-  collectionTitle: { fontSize: 26, fontWeight: 900 },
-  stickyBarWrapper: { position: "sticky", top: 75, zIndex: 90 },
-  stickyBar: { background: "#fff", borderBottom: "1px solid #eee" },
-  barFlex: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  categoriesWrapper: { display: "flex", gap: 20 },
-  catBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 11 },
-  actionsWrapper: { display: "flex", gap: 20 },
-  searchContainer: { display: "flex", alignItems: "center" },
-  minimalInput: { border: "none", borderBottom: "1px solid black" },
-  minimalSelect: { border: "none", background: "transparent" },
-};

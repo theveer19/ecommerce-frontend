@@ -105,20 +105,42 @@ export default function ProductDetailsPage({ session }) {
   const [relatedProducts, setRelatedProducts] = useState([]);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
-        if (error || !data) { navigate("/products"); return; }
-        setProduct(data);
-        setMainImage(data.image_url);
-        if (data.category) {
-          const { data: related } = await supabase.from("products").select("*").eq("category", data.category).neq("id", id).limit(4);
-          if (related) setRelatedProducts(related);
-        }
-      } catch (err) { navigate("/products"); } finally { setLoading(false); }
-    };
-    fetchProduct();
-  }, [id, navigate]);
+  const fetchProduct = async () => {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      navigate("/products");
+      return;
+    }
+
+    setProduct(data);
+    setMainImage(data.image_url);
+
+    const category = data.category?.trim().toLowerCase();
+
+    if (category) {
+      const { data: related } = await supabase
+        .from("products")
+        .select("*")
+        .ilike("category", `%${category}%`)
+        .neq("id", id)
+        .limit(4);
+
+      setRelatedProducts(related || []);
+    }
+
+    setLoading(false);
+  };
+
+  fetchProduct();
+}, [id, navigate]);
+
 
   const handleAddToCart = () => {
     if (!selectedSize && product.sizes?.length > 0) { setNotification({ open: true, message: "⚠️ SELECT A SIZE" }); return; }
