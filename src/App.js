@@ -1,308 +1,226 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Box, CircularProgress, Typography, Button } from '@mui/material';
-import { Security } from "@mui/icons-material"; // Icon for Admin Button
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate
+} from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { Box, CircularProgress } from "@mui/material";
 
-// --- CORE COMPONENTS ---
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AnnouncementBar from "./components/AnnouncementBar";
 import LoadingScreen from "./components/LoadingScreen";
-import ErrorBoundary from "./components/ErrorBoundary";
 import GlobalStyles from "./components/GlobalStyles";
-import { supabase } from "./supabase/supabaseClient";
 import ScrollToTop from "./components/ScrollToTop";
+import { supabase } from "./supabase/supabaseClient";
 
-// --- CONTEXTS ---
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 
-// --- LAZY LOADED PAGES ---
-// Ensure these file paths match EXACTLY with your project structure
+/* ---------- PAGES ---------- */
+import CheckoutPage from "./pages/CheckoutPage"; // ❗ NOT lazy
+
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ProductList = lazy(() => import("./components/ProductList"));
-const CategoriesPage = lazy(() => import("./pages/CategoriesPage"));
 const ProductDetailsPage = lazy(() => import("./pages/ProductDetailsPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
-const OrderPage = lazy(() => import("./pages/OrderPage"));
-const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
-const ContactPage = lazy(() => import("./pages/ContactPage")); 
+const OrderPage = lazy(() => import("./pages/OrderPage"));
+const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 
-// --- ADMIN PAGES ---
-const AdminPage = lazy(() => import("./pages/AdminPage")); 
-const AdminOrdersPage = lazy(() => import("./pages/AdminOrders")); 
-const AdminOrderDetailsPage = lazy(() => import("./pages/AdminOrderDetailsPage"));
-const ProductForm = lazy(() => import("./components/ProductForm")); 
+/* ---------- AUTH GUARD ---------- */
+const RequireAuth = ({ session, children }) => {
+  const location = useLocation();
 
-// --- PREMIUM THEME CONFIGURATION ---
-const theme = createTheme({
-  palette: {
-    primary: { main: '#000000', contrastText: '#FFFFFF' },
-    secondary: { main: '#FFFFFF', contrastText: '#000000' },
-    background: { default: '#F9FAFB', paper: '#FFFFFF' }, 
-    text: { primary: '#111827', secondary: '#6B7280' }
-  },
-  typography: {
-    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontWeight: 900, letterSpacing: '-0.02em' },
-    h2: { fontWeight: 800, letterSpacing: '-0.01em' },
-    h3: { fontWeight: 700 },
-    button: { fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' },
-  },
-  shape: { borderRadius: 12 }, 
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '50px', 
-          padding: '12px 28px',
-          boxShadow: 'none',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 10px 20px -10px rgba(0,0,0,0.2)' },
-        },
-        contained: { backgroundColor: '#000', color: '#fff' },
-        outlined: { borderWidth: '1.5px', '&:hover': { borderWidth: '1.5px' } }
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: { backgroundImage: 'none', transition: 'box-shadow 0.3s ease' }
-      }
-    }
-  },
-});
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-// --- STYLED ADMIN BUTTON (Glassmorphism) ---
-const AdminFloatingButton = ({ userRole }) => {
-  if (userRole !== 'admin') return null;
-  
-  return (
-    <Box
-      onClick={() => window.location.href = "/admin"}
-      sx={{
-        position: 'fixed',
-        bottom: 30,
-        right: 30,
-        zIndex: 9999,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        padding: '12px 24px',
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '50px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        '&:hover': {
-          transform: 'scale(1.05) translateY(-5px)',
-          background: '#000000',
-          boxShadow: '0 25px 50px rgba(0,0,0,0.4)',
-        }
-      }}
-    >
-      <Security sx={{ color: '#4ade80', fontSize: 20 }} />
-      <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '12px', letterSpacing: '1px' }}>
-        ADMIN COMMAND
-      </Typography>
-    </Box>
-  );
+  return children;
 };
 
-// --- CUSTOM FALLBACK LOADER ---
+/* ---------- ADMIN GUARD ---------- */
+const RequireAdmin = ({ role, children }) => {
+  if (role !== "admin") {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
+
+const theme = createTheme({});
+
 const PageLoader = () => (
-  <Box sx={{ 
-    display: 'flex', 
-    flexDirection: 'column', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    minHeight: '80vh', 
-    gap: 3 
-  }}>
-    <CircularProgress size={50} thickness={2} sx={{ color: 'black' }} />
-    <Typography sx={{ 
-      fontSize: '14px', 
-      fontWeight: 600, 
-      color: '#999', 
-      letterSpacing: '2px',
-      animation: 'pulse 2s infinite' 
-    }}>
-      LOADING EXPERIENCE...
-    </Typography>
-    <style>{`@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }`}</style>
+  <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+    <CircularProgress />
   </Box>
 );
 
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
+
   const [session, setSession] = useState(null);
-  const [userRole, setUserRole] = useState('customer');
+  const [userRole, setUserRole] = useState("customer");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
+  /* ---------- FETCH ROLE ---------- */
+  const fetchUserRole = async (userId) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
 
-    // Safety Timeout in case Auth hangs
-    const loadingTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn("Loading timeout reached. Forcing app render.");
-        setLoading(false);
-      }
-    }, 5000); 
-
-    // Initialize Auth
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted) return;
-        
-        if (session?.user) {
-          setSession(session);
-          await fetchUserRole(session.user.id, session.user.email);
-        }
-      } catch (err) {
-        console.error("Auth init failed", err);
-      } finally {
-        if (mounted) setLoading(false); 
-      }
-    };
-
-    initAuth();
-
-    // Listen for Auth Changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        if (session?.user) {
-          setSession(session);
-          await fetchUserRole(session.user.id, session.user.email);
-        } else {
-          setSession(null);
-          setUserRole('customer');
-        }
-      }
-    });
-
-    return () => {
-      mounted = false;
-      clearTimeout(loadingTimeout);
-      if (subscription) subscription.unsubscribe();
-    };
-  }, []);
-
-  const fetchUserRole = async (userId, userEmail) => {
-    try {
-      // 1. Try fetching role from profiles
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-      
-      if (data) {
-        setUserRole(data.role);
-      } else {
-        // 2. If no profile exists, create one safely
-        // This handles cases where a user exists in Auth but deleted from profiles
-        const newProfile = {
-          id: userId,
-          email: userEmail,
-          role: 'customer',
-          created_at: new Date().toISOString()
-        };
-
-        const { error: insertError } = await supabase.from("profiles").insert(newProfile);
-        
-        if (!insertError) {
-          setUserRole('customer');
-        } else {
-          console.error("Failed to create profile:", insertError);
-        }
-      }
-    } catch (err) {
-      console.error("Role fetch error", err);
+    if (!error && data?.role) {
+      setUserRole(data.role);
+    } else {
+      setUserRole("customer");
     }
   };
 
-  const handleLogin = (sessionData) => {
-    setSession(sessionData);
-    if (sessionData?.user) fetchUserRole(sessionData.user.id, sessionData.user.email);
-  };
+  /* ---------- INIT AUTH ---------- */
+  useEffect(() => {
+    // Preload Razorpay ONCE
+    if (!window.Razorpay) {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data?.session ?? null);
+
+      if (data?.session?.user) {
+        await fetchUserRole(data.session.user.id);
+      }
+
+      setLoading(false);
+    };
+
+    init();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, newSession) => {
+        setSession(newSession);
+
+        if (newSession?.user) {
+          await fetchUserRole(newSession.user.id);
+        } else {
+          setUserRole("customer");
+        }
+      }
+    );
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  /* ---------- LOGOUT ---------- */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    setUserRole('customer');
-    window.location.href = "/";
+    setUserRole("customer");
+    navigate("/", { replace: true });
   };
 
   if (loading) return <LoadingScreen />;
 
   return (
-    <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <GlobalStyles />
-        <CssBaseline />
-        <WishlistProvider>
-          <CartProvider>
-            <Router>
-              <ScrollToTop />
-              <Box sx={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                bgcolor: 'background.default',
-                animation: 'fadeIn 0.8s ease-out'
-              }}>
-                <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
-                
-                <AnnouncementBar />
-                <Navbar session={session} userRole={userRole} onLogout={handleLogout} />
-                <AdminFloatingButton userRole={userRole} />
+    <>
+      <AnnouncementBar />
+      <Navbar session={session} userRole={userRole} onLogout={handleLogout} />
 
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<HomePage session={session} />} />
-                    <Route path="/products" element={<ProductList session={session} />} />
-                    <Route path="/categories" element={<CategoriesPage session={session} />} />
-                    <Route path="/product/:id" element={<ProductDetailsPage session={session} />} />
-                    <Route path="/about" element={<AboutUsPage session={session} />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    
-                    <Route path="/login" element={session ? <Navigate to="/" replace /> : <Auth onLogin={handleLogin} />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* PUBLIC */}
+          <Route path="/" element={<HomePage session={session} />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/cart" element={<CartPage session={session} />} />
+          <Route path="/thank-you" element={<ThankYouPage />} />
 
-                    <Route path="/cart" element={<CartPage session={session} />} />
-                    <Route path="/wishlist" element={session ? <WishlistPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/checkout" element={session ? <CheckoutPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/thank-you" element={<ThankYouPage session={session} />} />
-                    <Route path="/orders" element={session ? <OrderPage session={session} /> : <Navigate to="/login" replace />} />
-                    <Route path="/orders/:id" element={session ? <UserOrderDetailsPage session={session} /> : <Navigate to="/login" replace />} />
+          {/* AUTH */}
+          <Route path="/login" element={<Auth />} />
 
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={userRole === "admin" ? <AdminPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/orders" element={userRole === "admin" ? <AdminOrdersPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/orders/:id" element={userRole === "admin" ? <AdminOrderDetailsPage session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/products/new" element={userRole === "admin" ? <ProductForm session={session} /> : <Navigate to="/" replace />} />
-                    <Route path="/admin/products/edit/:id" element={userRole === "admin" ? <ProductForm session={session} /> : <Navigate to="/" replace />} />
+          {/* USER PROTECTED */}
+          <Route
+            path="/checkout"
+            element={
+              <RequireAuth session={session}>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <RequireAuth session={session}>
+                <OrderPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <RequireAuth session={session}>
+                <UserOrderDetailsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <RequireAuth session={session}>
+                <WishlistPage />
+              </RequireAuth>
+            }
+          />
 
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
+          {/* ADMIN */}
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin role={userRole}>
+                <AdminPage />
+              </RequireAdmin>
+            }
+          />
 
-                <Footer />
-              </Box>
-            </Router>
-          </CartProvider>
-        </WishlistProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+          {/* FALLBACK */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+
+      <Footer />
+    </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <GlobalStyles />
+      <CssBaseline />
+      <WishlistProvider>
+        <CartProvider>
+          <Router>
+            <ScrollToTop />
+            <AppContent />
+          </Router>
+        </CartProvider>
+      </WishlistProvider>
+    </ThemeProvider>
+  );
+}

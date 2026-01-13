@@ -1,496 +1,586 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 import {
   Box, Stepper, Step, StepLabel, Button, Typography, TextField, Paper, Grid,
-  FormControl, FormLabel, RadioGroup, FormControlLabel, Radio, Alert, Card,
-  CardContent, CardMedia, Chip, CircularProgress, Container,
-  InputAdornment, Checkbox, Divider, Badge, Snackbar, IconButton, Dialog,
-  DialogTitle, DialogContent, DialogActions, useMediaQuery, useTheme,
+  FormControlLabel, Radio, RadioGroup, Alert, Card, CardContent, CardMedia,
+  Divider, Snackbar, Container, useTheme, Avatar
 } from "@mui/material";
 import {
-  ArrowBack, CreditCard, Money, LocalShipping, Security,
-  VerifiedUser, CheckCircle, Warning, LocationOn, Phone, Email,
-  Person, Business, Close, Lock, Payment
+  CreditCard, Money, LocationOn, CheckCircle, Security, ArrowBack, LocalShipping, ReceiptLong, Lock
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 
-// CONFIGURATION
 const BACKEND_URL = "https://ecommerce-backend-qqhi.onrender.com";
 const RAZORPAY_KEY = process.env.REACT_APP_RAZORPAY_KEY_ID;
 
-// --- ANIMATION VARIANTS ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } }
-};
-
-const cardHover3D = {
-  rest: { scale: 1, rotateX: 0, rotateY: 0, boxShadow: "0 4px 20px rgba(0,0,0,0.05)" },
-  hover: { scale: 1.02, rotateX: 2, rotateY: 2, boxShadow: "0 20px 40px rgba(0,0,0,0.15)", transition: { type: "spring", stiffness: 300 } }
-};
-
-const styles = {
-  root: {
-    minHeight: '100vh',
-    background: '#f8f9fa',
-    backgroundImage: `
-      radial-gradient(at 0% 0%, rgba(0,0,0,0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(0,0,0,0.03) 0px, transparent 50%)
-    `,
-    position: 'relative',
-    overflowX: 'hidden',
-    pb: 8
-  },
-  container: {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: { xs: '20px', md: '40px' },
-    position: 'relative',
-    zIndex: 2,
-  },
-  glassPanel: {
-    background: 'rgba(255, 255, 255, 0.8)',
-    backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.9)',
-    borderRadius: '24px',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)',
-    overflow: 'hidden',
-    transition: 'transform 0.3s ease',
-  },
-  headerTitle: {
-    fontWeight: 900,
-    fontSize: { xs: '2rem', md: '3.5rem' },
-    background: 'linear-gradient(45deg, #000 30%, #444 90%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    mb: 1,
-    letterSpacing: '-1px'
-  },
-  stepper: {
-    background: 'transparent',
-    p: 0,
-    mb: 4,
-    '& .MuiStepLabel-label': { fontWeight: 600, color: '#999' },
-    '& .MuiStepLabel-label.Mui-active': { color: '#000', fontWeight: 800 },
-    '& .MuiStepLabel-label.Mui-completed': { color: '#000' },
-    '& .MuiStepIcon-root': { color: '#eee', fontSize: '2rem' },
-    '& .MuiStepIcon-root.Mui-active': { color: '#000' },
-    '& .MuiStepIcon-root.Mui-completed': { color: '#000' },
-  },
-  input: {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '12px',
-      background: '#fff',
-      transition: 'all 0.3s',
-      '& fieldset': { borderColor: '#eee' },
-      '&:hover fieldset': { borderColor: '#000' },
-      '&.Mui-focused fieldset': { borderColor: '#000', borderWidth: '2px' },
-      '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }
-    },
-    '& .MuiInputLabel-root': { fontWeight: 500, color: '#666' },
-    '& .MuiInputLabel-root.Mui-focused': { color: '#000' }
-  },
-  paymentCard: {
-    border: '2px solid transparent',
-    borderRadius: '16px',
-    p: 3,
-    mb: 2,
-    background: '#fff',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    overflow: 'hidden',
-    '&.selected': {
-      borderColor: '#000',
-      background: 'linear-gradient(135deg, #fff 0%, #f5f5f5 100%)',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-    }
-  },
-  primaryBtn: {
-    background: '#000',
-    color: '#fff',
-    borderRadius: '50px',
-    py: 1.5,
-    px: 4,
-    fontWeight: 700,
-    fontSize: '1rem',
-    textTransform: 'none',
-    boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
-    '&:hover': {
-      background: '#222',
-      transform: 'translateY(-2px)',
-      boxShadow: '0 15px 30px rgba(0,0,0,0.3)',
-    },
-    '&:disabled': {
-      background: '#ccc'
-    }
-  },
-  summaryCard: {
-    position: 'sticky',
-    top: 100,
-    background: '#fff',
-    borderRadius: '24px',
-    p: 4,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
-    border: '1px solid rgba(0,0,0,0.05)'
-  },
-  itemRow: {
-    display: 'flex',
-    gap: 2,
-    mb: 2,
-    p: 1.5,
-    borderRadius: '12px',
-    transition: 'background 0.2s',
-    '&:hover': { background: '#f8f8f8' }
-  }
-};
-
-const steps = ['Shipping', 'Payment', 'Review'];
+const steps = ["Shipping", "Payment", "Review"];
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const buyNowItem = location.state?.buyNowItem ?? null;
-  const itemsToShow = useMemo(() => buyNowItem ? [buyNowItem] : (cartItems || []), [buyNowItem, cartItems]);
+  const itemsToShow = useMemo(
+    () => (buyNowItem ? [buyNowItem] : cartItems),
+    [buyNowItem, cartItems]
+  );
 
-  const [activeStep, setActiveStep] = useState(0);
   const [session, setSession] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [showSnackbar, setShowSnackbar] = useState(false);
-  const [paymentDialog, setPaymentDialog] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, type: "", text: "" });
 
   const [shippingInfo, setShippingInfo] = useState({
-    firstName: '', lastName: '', email: '', phone: '', address: '',
-    city: '', state: '', zipCode: '', country: 'India', saveAddress: false,
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "India",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('razorpay');
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("razorpay");
 
-  const subtotal = useMemo(() => itemsToShow.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (Number(item.quantity) || 1), 0), [itemsToShow]);
+  const subtotal = useMemo(
+    () =>
+      itemsToShow.reduce(
+        (sum, i) => sum + Number(i.price) * Number(i.quantity || 1),
+        0
+      ),
+    [itemsToShow]
+  );
+
   const shippingFee = subtotal > 999 ? 0 : 50;
   const tax = subtotal * 0.18;
   const totalAmount = subtotal + shippingFee + tax;
 
+  /* ---------- AUTH (FAST, NON-BLOCKING) ---------- */
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data?.session);
-      if (data?.session?.user?.email) setShippingInfo(p => ({ ...p, email: data.session.user.email }));
-    };
-    checkAuth();
-    
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => setRazorpayLoaded(true);
-    document.body.appendChild(script);
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data?.session || null);
+      if (data?.session?.user?.email) {
+        setShippingInfo((p) => ({
+          ...p,
+          email: data.session.user.email,
+        }));
+      }
+    });
   }, []);
 
-  const showMessage = (type, text) => { setMessage({ type, text }); setShowSnackbar(true); };
+  const showMessage = (type, text) =>
+    setSnackbar({ open: true, type, text });
 
+  /* ---------- SAVE ORDER ---------- */
   const saveOrderToBackend = async (method, paymentDetails = null) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const orderPayload = {
-        user_id: user?.id || null,
-        items: itemsToShow.map(item => ({
-          id: item.id, name: item.name, price: parseFloat(item.price),
-          quantity: Number(item.quantity), image_url: item.image_url
-        })),
-        total_amount: Number(totalAmount.toFixed(2)),
-        subtotal: Number(subtotal.toFixed(2)),
-        shipping_fee: Number(shippingFee.toFixed(2)),
-        tax: Number(tax.toFixed(2)),
-        shipping_info: shippingInfo,
-        payment_method: method,
-        payment_id: paymentDetails 
-      };
+    const { data } = await supabase.auth.getUser();
 
-      const response = await fetch(`${BACKEND_URL}/save-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload),
-      });
+    const payload = {
+      user_id: data?.user?.id || null,
+      items: itemsToShow,
+      subtotal,
+      shipping_fee: shippingFee,
+      tax,
+      total_amount: Number(totalAmount.toFixed(2)),
+      shipping_info: shippingInfo,
+      payment_method: method,
+      payment_details: paymentDetails,
+    };
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error);
-      return result.order;
-    } catch (err) {
-      console.error('❌ Save failed:', err);
-      throw err;
-    }
+    const res = await fetch(`${BACKEND_URL}/save-order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    if (!json.success) throw new Error("Order save failed");
+    return json.order;
   };
 
+  /* ---------- PLACE ORDER ---------- */
   const handlePlaceOrder = async () => {
-    if (paymentMethod === 'cod') {
-      setLoading(true);
+    if (paymentMethod === "cod") {
       try {
-        const order = await saveOrderToBackend("cod", null);
+        setLoading(true);
+        const order = await saveOrderToBackend("cod");
         if (!buyNowItem) clearCart();
-        navigate("/thank-you", { state: { orderDetails: { ...order, items: itemsToShow } } });
-      } catch (err) {
-        showMessage('error', 'Order failed. Try again.');
+        navigate("/thank-you", { state: { orderDetails: order } });
+      } catch {
+        showMessage("error", "Order failed. Try again.");
       } finally {
         setLoading(false);
       }
-    } else {
-      setLoading(true);
-      setPaymentDialog(true);
-      try {
-        const orderRes = await fetch(`${BACKEND_URL}/create-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: totalAmount.toFixed(2) }),
-        });
-        
-        const orderData = await orderRes.json();
-        if (!orderData.id) throw new Error("Payment init failed");
+      return;
+    }
 
-        const options = {
-          key: RAZORPAY_KEY,
-          amount: orderData.amount,
-          currency: "INR",
-          order_id: orderData.id,
-          name: "ONE-T Fashion",
-          description: "Premium Fashion Order",
-          handler: async function (response) {
-            setPaymentStatus('success');
-            try {
-              const savedOrder = await saveOrderToBackend("razorpay", {
-                payment_id: response.razorpay_payment_id,
-                order_id: response.razorpay_order_id
-              });
-              await fetch(`${BACKEND_URL}/verify-payment`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature
-                })
-              });
-              if (!buyNowItem) clearCart();
-              setTimeout(() => {
-                setPaymentDialog(false);
-                navigate("/thank-you", { state: { orderDetails: { ...savedOrder, items: itemsToShow } } });
-              }, 1500);
-            } catch (err) {
-              setPaymentStatus('error');
-              showMessage('error', 'Payment successful but order save failed.');
-            }
-          },
-          prefill: {
-            name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-            email: shippingInfo.email,
-            contact: shippingInfo.phone,
-          },
-          theme: { color: "#000000" },
-          modal: { ondismiss: () => { setPaymentDialog(false); setLoading(false); } }
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-        setLoading(false);
-      } catch (err) {
-        setPaymentDialog(false);
-        setLoading(false);
-        showMessage('error', 'Payment initialization failed');
-      }
+    // 🔥 Razorpay (FAST)
+    try {
+      const res = await fetch(`${BACKEND_URL}/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: totalAmount.toFixed(2) }),
+      });
+
+      const orderData = await res.json();
+      if (!orderData?.id) throw new Error();
+
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: orderData.amount,
+        currency: "INR",
+        order_id: orderData.id,
+        name: "ONE-T Fashion",
+        handler: async (response) => {
+          try {
+            const saved = await saveOrderToBackend("razorpay", response);
+            if (!buyNowItem) clearCart();
+            navigate("/thank-you", {
+              state: { orderDetails: saved },
+            });
+          } catch {
+            showMessage("error", "Payment done but order save failed");
+          }
+        },
+        prefill: {
+          name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          email: shippingInfo.email,
+          contact: shippingInfo.phone,
+        },
+        theme: { color: "#000" },
+      };
+
+      new window.Razorpay(options).open();
+    } catch {
+      showMessage("error", "Payment initialization failed");
     }
   };
 
+  /* ---------- STEP VALIDATION ---------- */
   const handleNext = () => {
     if (activeStep === 0) {
       if (!shippingInfo.firstName || !shippingInfo.phone || !shippingInfo.address) {
-        showMessage('error', 'Please fill all fields');
+        showMessage("error", "Please fill all shipping fields");
         return;
       }
     }
-    setActiveStep(prev => prev + 1);
+    setActiveStep((p) => p + 1);
   };
 
-  const renderStepContent = (step) => {
-    const inputAnimation = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
-
-    switch (step) {
-      case 0: return (
-        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-          <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <LocationOn /> SHIPPING DETAILS
-          </Typography>
-          <Grid container spacing={3}>
-            {['firstName', 'lastName', 'email', 'phone'].map((field, i) => (
-              <Grid item xs={12} sm={6} key={field}>
-                <motion.div variants={itemVariants}>
-                  <TextField fullWidth label={field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
-                    value={shippingInfo[field]} onChange={(e) => setShippingInfo({...shippingInfo, [field]: e.target.value})} 
-                    sx={styles.input} />
-                </motion.div>
-              </Grid>
-            ))}
-            <Grid item xs={12}>
-              <motion.div variants={itemVariants}>
-                <TextField fullWidth label="Address" value={shippingInfo.address} onChange={(e) => setShippingInfo({...shippingInfo, address: e.target.value})} sx={styles.input} />
-              </motion.div>
-            </Grid>
-            {['city', 'state', 'zipCode'].map((field) => (
-              <Grid item xs={12} sm={4} key={field}>
-                <motion.div variants={itemVariants}>
-                  <TextField fullWidth label={field === 'zipCode' ? 'Zip Code' : field.charAt(0).toUpperCase() + field.slice(1)} 
-                    value={shippingInfo[field]} onChange={(e) => setShippingInfo({...shippingInfo, [field]: e.target.value})} 
-                    sx={styles.input} />
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
-        </motion.div>
-      );
-      case 1: return (
-        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-          <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CreditCard /> PAYMENT METHOD
-          </Typography>
-          <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            {[
-              { value: 'razorpay', label: 'Credit/Debit/UPI', desc: 'Secure Instant Payment', icon: <Security /> },
-              { value: 'cod', label: 'Cash on Delivery', desc: 'Pay at your doorstep', icon: <Money /> }
-            ].map((option) => (
-              <motion.div key={option.value} variants={itemVariants} whileHover="hover" initial="rest" animate="rest">
-                <Paper 
-                  elevation={0}
-                  className={paymentMethod === option.value ? 'selected' : ''}
-                  sx={{ ...styles.paymentCard, ...(paymentMethod === option.value && styles.paymentCard.selected) }}
-                  component={motion.div}
-                  variants={cardHover3D}
-                >
-                  <FormControlLabel value={option.value} control={<Radio sx={{ color: '#000', '&.Mui-checked': { color: '#000' } }} />} 
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ p: 1, bgcolor: '#000', color: '#fff', borderRadius: '50%' }}>{option.icon}</Box>
-                        <Box>
-                          <Typography fontWeight={800} fontSize="1.1rem">{option.label}</Typography>
-                          <Typography variant="body2" color="text.secondary">{option.desc}</Typography>
-                        </Box>
-                      </Box>
-                    } 
-                  />
-                </Paper>
-              </motion.div>
-            ))}
-          </RadioGroup>
-        </motion.div>
-      );
-      case 2: return (
-        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-          <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircle /> FINAL REVIEW
-          </Typography>
-          <Card sx={{ borderRadius: '20px', boxShadow: 'none', border: '1px solid #eee' }}>
-            <CardContent>
-              {itemsToShow.map((item, i) => (
-                <motion.div key={i} variants={itemVariants} style={styles.itemRow}>
-                  <CardMedia component="img" image={item.image_url} sx={{ width: 70, height: 70, borderRadius: '12px', objectFit: 'cover' }} />
-                  <Box flex={1}>
-                    <Typography fontWeight={800} fontSize="1.1rem">{item.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">Quantity: {item.quantity}</Typography>
-                  </Box>
-                  <Typography fontWeight={800} fontSize="1.2rem">₹{item.price}</Typography>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
-      );
-      default: return null;
+  /* ---------- STYLES (3D / MODERN) ---------- */
+  const styles = {
+    pageBackground: {
+      background: '#f0f2f5',
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      py: 8,
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    mainContainer: {
+      position: 'relative',
+      zIndex: 2,
+    },
+    glassCard: {
+      background: 'rgba(255, 255, 255, 0.8)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '30px',
+      border: '1px solid #fff',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255,255,255,0.5)',
+      overflow: 'hidden',
+      p: 4
+    },
+    stepIcon: (active, completed) => ({
+      width: '40px',
+      height: '40px',
+      borderRadius: '12px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: active ? '#000' : completed ? '#4caf50' : '#e0e0e0',
+      color: active || completed ? '#fff' : '#999',
+      boxShadow: active ? '0 10px 20px rgba(0,0,0,0.3)' : 'none',
+      transition: 'all 0.3s ease',
+      fontWeight: 'bold'
+    }),
+    inputField: {
+      '& .MuiOutlinedInput-root': {
+        borderRadius: '16px',
+        background: '#fff',
+        transition: 'all 0.3s ease',
+        '& fieldset': { borderColor: '#e0e0e0' },
+        '&:hover fieldset': { borderColor: '#000' },
+        '&.Mui-focused fieldset': { borderColor: '#000', borderWidth: '2px' },
+        '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }
+      }
+    },
+    paymentCard: (selected) => ({
+      p: 3,
+      borderRadius: '20px',
+      border: selected ? '2px solid #000' : '1px solid #e0e0e0',
+      background: selected ? '#fff' : '#f9f9f9',
+      cursor: 'pointer',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      transform: selected ? 'scale(1.02) translateY(-4px)' : 'scale(1)',
+      boxShadow: selected ? '0 20px 30px rgba(0,0,0,0.1)' : 'none',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2
+    }),
+    summaryRow: {
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        mb: 2,
+        color: '#555'
+    },
+    actionBtn: {
+        borderRadius: '50px',
+        py: 1.5,
+        px: 4,
+        fontWeight: 800,
+        textTransform: 'none',
+        fontSize: '1rem',
+        boxShadow: '0 10px 20px rgba(0,0,0,0.2)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 15px 30px rgba(0,0,0,0.3)'
+        }
     }
   };
 
-  if (!session) return <Box sx={styles.root} display="flex" justifyContent="center" alignItems="center"><Paper sx={{ p: 5, borderRadius: '24px', textAlign: 'center' }}><Typography variant="h4" fontWeight={900} mb={2}>Sign In Required</Typography><Button onClick={() => navigate("/login")} sx={styles.primaryBtn}>Login Now</Button></Paper></Box>;
+  if (!session) {
+    return (
+      <Box sx={styles.pageBackground}>
+        <Container maxWidth="sm" sx={{ textAlign: "center" }}>
+          <Paper sx={{ ...styles.glassCard, textAlign: 'center', py: 8 }}>
+            <Lock sx={{ fontSize: 60, mb: 2, color: '#000' }} />
+            <Typography variant="h4" fontWeight={900} mb={2}>
+              Secure Checkout
+            </Typography>
+            <Typography color="text.secondary" mb={4}>
+              Please login to access your saved address and complete your purchase securely.
+            </Typography>
+            <Button 
+                onClick={() => navigate("/login")} 
+                variant="contained" 
+                sx={{ ...styles.actionBtn, bgcolor: 'black', color: 'white' }}
+            >
+              Login to Continue
+            </Button>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={styles.root}>
-      {/* Background Decor */}
-      <Box sx={{ position: 'absolute', top: -100, right: -100, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-      <Box sx={{ position: 'absolute', bottom: -100, left: -100, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+    <Box sx={styles.pageBackground}>
+      {/* Dynamic Background Elements */}
+      <Box sx={{ position: 'absolute', top: -100, left: -100, width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, transparent 70%)', borderRadius: '50%' }} />
+      <Box sx={{ position: 'absolute', bottom: -50, right: -50, width: 600, height: 600, background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
 
-      <Container sx={styles.container}>
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          <Box textAlign="center" mb={6}>
-            <Typography sx={styles.headerTitle}>SECURE CHECKOUT</Typography>
-            <Typography variant="body1" color="text.secondary" fontWeight={500}>Complete your order safely and securely</Typography>
-          </Box>
-        </motion.div>
+      <Container maxWidth="lg" sx={styles.mainContainer}>
+        
+        {/* Header */}
+        <Box sx={{ mb: 6, textAlign: 'center' }}>
+            <Typography variant="h2" sx={{ fontWeight: 900, fontSize: { xs: '2rem', md: '3rem' }, mb: 1 }}>
+                CHECKOUT
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Security sx={{ fontSize: 16, color: '#4caf50' }} />
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#666', letterSpacing: '1px' }}>
+                    256-BIT SECURE SSL ENCRYPTED
+                </Typography>
+            </Box>
+        </Box>
 
-        <Grid container spacing={5}>
-          <Grid item xs={12} lg={8}>
-            <Paper sx={styles.glassPanel}>
-              <Box p={4}>
-                <Stepper activeStep={activeStep} alternativeLabel sx={styles.stepper}>
-                  {steps.map(label => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-                </Stepper>
-                
-                <AnimatePresence mode="wait">
-                  <motion.div key={activeStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-                    {renderStepContent(activeStep)}
-                  </motion.div>
-                </AnimatePresence>
+        <Grid container spacing={4}>
+            
+            {/* LEFT COLUMN: STEPS */}
+            <Grid item xs={12} lg={8}>
+                <Paper sx={styles.glassCard}>
+                    
+                    {/* Custom Stepper */}
+                    <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 6 }}>
+                        {steps.map((label, index) => (
+                        <Step key={label}>
+                            <StepLabel StepIconComponent={() => (
+                                <Box sx={styles.stepIcon(activeStep === index, activeStep > index)}>
+                                    {activeStep > index ? <CheckCircle fontSize="small" /> : index + 1}
+                                </Box>
+                            )}>
+                                <Typography sx={{ fontWeight: activeStep === index ? 800 : 500 }}>{label}</Typography>
+                            </StepLabel>
+                        </Step>
+                        ))}
+                    </Stepper>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6 }}>
-                  <Button disabled={activeStep === 0} onClick={() => setActiveStep(p => p - 1)} variant="outlined" sx={{ borderRadius: '50px', px: 4, borderColor: '#ccc', color: '#666' }}>Back</Button>
-                  {activeStep === steps.length - 1 ? (
-                    <Button onClick={handlePlaceOrder} disabled={loading} sx={styles.primaryBtn}>
-                      {loading ? 'Processing...' : `Pay ₹${totalAmount.toFixed(2)}`}
-                    </Button>
-                  ) : (
-                    <Button onClick={handleNext} sx={styles.primaryBtn}>Continue</Button>
-                  )}
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
+                    <AnimatePresence mode="wait">
+                        {/* STEP 1: SHIPPING */}
+                        {activeStep === 0 && (
+                        <motion.div 
+                            key="step1"
+                            initial={{ opacity: 0, x: -20 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
+                                <Avatar sx={{ bgcolor: '#f5f5f5', color: '#000' }}><LocalShipping /></Avatar>
+                                <Typography variant="h5" fontWeight={800}>Shipping Details</Typography>
+                            </Box>
+                            
+                            <Grid container spacing={3}>
+                                {["firstName", "lastName", "email", "phone"].map((f) => (
+                                    <Grid item xs={12} md={6} key={f}>
+                                        <TextField
+                                            fullWidth
+                                            label={f.replace(/([A-Z])/g, ' $1').trim().toUpperCase()}
+                                            value={shippingInfo[f]}
+                                            onChange={(e) => setShippingInfo({ ...shippingInfo, [f]: e.target.value })}
+                                            sx={styles.inputField}
+                                            variant="outlined"
+                                            InputLabelProps={{ style: { fontSize: '0.8rem', fontWeight: 700, letterSpacing: '1px' } }}
+                                        />
+                                    </Grid>
+                                ))}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        fullWidth
+                                        label="STREET ADDRESS"
+                                        value={shippingInfo.address}
+                                        onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
+                                        sx={styles.inputField}
+                                        multiline
+                                        rows={2}
+                                        InputLabelProps={{ style: { fontSize: '0.8rem', fontWeight: 700, letterSpacing: '1px' } }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="CITY"
+                                        value={shippingInfo.city}
+                                        onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                                        sx={styles.inputField}
+                                        InputLabelProps={{ style: { fontSize: '0.8rem', fontWeight: 700, letterSpacing: '1px' } }}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="ZIP CODE"
+                                        value={shippingInfo.zipCode}
+                                        onChange={(e) => setShippingInfo({ ...shippingInfo, zipCode: e.target.value })}
+                                        sx={styles.inputField}
+                                        InputLabelProps={{ style: { fontSize: '0.8rem', fontWeight: 700, letterSpacing: '1px' } }}
+                                    />
+                                </Grid>
+                            </Grid>
+                        </motion.div>
+                        )}
 
-          <Grid item xs={12} lg={4}>
-            <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-              <Box sx={styles.summaryCard}>
-                <Typography variant="h6" fontWeight={900} mb={3}>ORDER SUMMARY</Typography>
-                <Box mb={2} display="flex" justifyContent="space-between"><Typography color="text.secondary">Subtotal</Typography><Typography fontWeight={600}>₹{subtotal.toFixed(2)}</Typography></Box>
-                <Box mb={2} display="flex" justifyContent="space-between"><Typography color="text.secondary">Shipping</Typography><Typography fontWeight={600} color={shippingFee === 0 ? "success.main" : "text.primary"}>{shippingFee === 0 ? "FREE" : `₹${shippingFee}`}</Typography></Box>
-                <Box mb={3} display="flex" justifyContent="space-between"><Typography color="text.secondary">GST (18%)</Typography><Typography fontWeight={600}>₹{tax.toFixed(2)}</Typography></Box>
-                <Divider sx={{ my: 2 }} />
-                <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6" fontWeight={800}>TOTAL</Typography>
-                  <Typography variant="h4" fontWeight={900}>₹{totalAmount.toFixed(2)}</Typography>
-                </Box>
-                
-                <Box bgcolor="#f8f9fa" p={2} borderRadius="12px">
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Security sx={{ fontSize: 18, color: '#4CAF50' }} />
-                    <Typography variant="caption" fontWeight={700} color="#4CAF50">SSL ENCRYPTED PAYMENT</Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" display="block">Your data is processed securely.</Typography>
-                </Box>
-              </Box>
-            </motion.div>
-          </Grid>
+                        {/* STEP 2: PAYMENT */}
+                        {activeStep === 1 && (
+                        <motion.div 
+                            key="step2"
+                            initial={{ opacity: 0, x: -20 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
+                                <Avatar sx={{ bgcolor: '#f5f5f5', color: '#000' }}><CreditCard /></Avatar>
+                                <Typography variant="h5" fontWeight={800}>Select Payment</Typography>
+                            </Box>
+
+                            <RadioGroup value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                                <Grid container spacing={3}>
+                                    <Grid item xs={12}>
+                                        <Box onClick={() => setPaymentMethod('razorpay')} sx={styles.paymentCard(paymentMethod === 'razorpay')}>
+                                            <Radio checked={paymentMethod === 'razorpay'} />
+                                            <Box>
+                                                <Typography fontWeight={800} fontSize="1.1rem">Pay Online (Razorpay)</Typography>
+                                                <Typography variant="body2" color="text.secondary">Cards, UPI, NetBanking. Fast & Secure.</Typography>
+                                            </Box>
+                                            <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                                                {/* Mock Card Icons */}
+                                                <Box sx={{ width: 30, height: 20, bgcolor: '#eee', borderRadius: 1 }} />
+                                                <Box sx={{ width: 30, height: 20, bgcolor: '#eee', borderRadius: 1 }} />
+                                            </Box>
+                                        </Box>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Box onClick={() => setPaymentMethod('cod')} sx={styles.paymentCard(paymentMethod === 'cod')}>
+                                            <Radio checked={paymentMethod === 'cod'} />
+                                            <Box>
+                                                <Typography fontWeight={800} fontSize="1.1rem">Cash on Delivery</Typography>
+                                                <Typography variant="body2" color="text.secondary">Pay with cash when your order arrives.</Typography>
+                                            </Box>
+                                            <Box sx={{ ml: 'auto' }}>
+                                                <Money sx={{ color: '#666' }} />
+                                            </Box>
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                            </RadioGroup>
+                        </motion.div>
+                        )}
+
+                        {/* STEP 3: REVIEW */}
+                        {activeStep === 2 && (
+                        <motion.div 
+                            key="step3"
+                            initial={{ opacity: 0, x: -20 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
+                                <Avatar sx={{ bgcolor: '#f5f5f5', color: '#000' }}><ReceiptLong /></Avatar>
+                                <Typography variant="h5" fontWeight={800}>Review Order</Typography>
+                            </Box>
+
+                            <Box sx={{ maxHeight: '400px', overflowY: 'auto', pr: 1 }}>
+                                {itemsToShow.map((item) => (
+                                <Card key={item.id} sx={{ mb: 2, borderRadius: '16px', boxShadow: 'none', border: '1px solid #eee' }}>
+                                    <CardContent sx={{ display: "flex", gap: 3, alignItems: 'center' }}>
+                                        <Box sx={{ 
+                                            width: 80, height: 80, 
+                                            borderRadius: '12px', overflow: 'hidden', 
+                                            boxShadow: '0 5px 15px rgba(0,0,0,0.1)' 
+                                        }}>
+                                            <CardMedia component="img" image={item.image_url} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography fontWeight={800} fontSize="1.1rem">{item.name}</Typography>
+                                            <Typography color="text.secondary" variant="body2">Qty: {item.quantity}</Typography>
+                                        </Box>
+                                        <Typography fontWeight={700}>₹{item.price}</Typography>
+                                    </CardContent>
+                                </Card>
+                                ))}
+                            </Box>
+
+                            <Box sx={{ mt: 4, p: 3, bgcolor: '#f8f9fa', borderRadius: '16px', border: '1px dashed #ccc' }}>
+                                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>SHIPPING TO:</Typography>
+                                <Typography variant="body2">{shippingInfo.firstName} {shippingInfo.lastName}</Typography>
+                                <Typography variant="body2">{shippingInfo.address}, {shippingInfo.city}</Typography>
+                                <Typography variant="body2">{shippingInfo.phone}</Typography>
+                            </Box>
+                        </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Navigation Buttons */}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 6, pt: 4, borderTop: '1px solid #eee' }}>
+                        <Button 
+                            disabled={activeStep === 0} 
+                            onClick={() => setActiveStep((p) => p - 1)}
+                            startIcon={<ArrowBack />}
+                            sx={{ color: '#000', fontWeight: 700 }}
+                        >
+                            Back
+                        </Button>
+                        
+                        {activeStep === steps.length - 1 ? (
+                            <Button 
+                                variant="contained" 
+                                onClick={handlePlaceOrder} 
+                                disabled={loading}
+                                sx={{ ...styles.actionBtn, bgcolor: 'black', color: 'white', '&:hover': { bgcolor: '#333' } }}
+                            >
+                                {loading ? <Typography sx={{ animation: 'pulse 1s infinite' }}>PROCESSING...</Typography> : `PAY ₹${totalAmount.toFixed(2)}`}
+                            </Button>
+                        ) : (
+                            <Button 
+                                variant="contained" 
+                                onClick={handleNext}
+                                sx={{ ...styles.actionBtn, bgcolor: 'black', color: 'white', '&:hover': { bgcolor: '#333' } }}
+                            >
+                                Continue
+                            </Button>
+                        )}
+                    </Box>
+                </Paper>
+            </Grid>
+
+            {/* RIGHT COLUMN: ORDER SUMMARY (Sticky) */}
+            <Grid item xs={12} lg={4}>
+                <Paper sx={{ 
+                    ...styles.glassCard, 
+                    position: { lg: 'sticky' }, 
+                    top: '100px',
+                    bgcolor: '#1a1a1a', // Dark theme for summary
+                    color: '#fff',
+                    border: '1px solid #333'
+                }}>
+                    <Typography variant="h6" sx={{ fontWeight: 900, mb: 4, letterSpacing: '1px' }}>ORDER SUMMARY</Typography>
+                    
+                    <Box sx={{ ...styles.summaryRow, color: '#aaa' }}>
+                        <Typography>Subtotal</Typography>
+                        <Typography sx={{ color: '#fff' }}>₹{subtotal.toFixed(2)}</Typography>
+                    </Box>
+                    <Box sx={{ ...styles.summaryRow, color: '#aaa' }}>
+                        <Typography>Shipping</Typography>
+                        <Typography sx={{ color: shippingFee === 0 ? '#4caf50' : '#fff' }}>
+                            {shippingFee === 0 ? "FREE" : `₹${shippingFee}`}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ ...styles.summaryRow, color: '#aaa' }}>
+                        <Typography>Tax (18%)</Typography>
+                        <Typography sx={{ color: '#fff' }}>₹{tax.toFixed(2)}</Typography>
+                    </Box>
+
+                    <Divider sx={{ borderColor: '#333', my: 3 }} />
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <Typography sx={{ color: '#aaa' }}>Total Amount</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 900 }}>₹{totalAmount.toFixed(2)}</Typography>
+                    </Box>
+
+                    {/* Trust Badges */}
+                    <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center', opacity: 0.5 }}>
+                       <Security fontSize="small" />
+                       <Typography variant="caption">Guaranteed Secure Checkout</Typography>
+                    </Box>
+                </Paper>
+            </Grid>
+
         </Grid>
       </Container>
 
-      <Snackbar open={showSnackbar} autoHideDuration={6000} onClose={() => setShowSnackbar(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={message.type} variant="filled" sx={{ borderRadius: '12px', fontWeight: 600 }}>{message.text}</Alert>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+            severity={snackbar.type === "error" ? "error" : "success"} 
+            variant="filled"
+            sx={{ borderRadius: '50px', fontWeight: 700, px: 4, boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}
+        >
+          {snackbar.text}
+        </Alert>
       </Snackbar>
+
+      <style>{`
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+      `}</style>
     </Box>
   );
 }
