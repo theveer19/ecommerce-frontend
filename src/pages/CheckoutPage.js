@@ -4,11 +4,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 import {
   Box, Stepper, Step, StepLabel, Button, Typography, TextField, Paper, Grid,
-  FormControlLabel, Radio, RadioGroup, Alert, Card, CardContent, CardMedia,
-  Divider, Snackbar, Container, useTheme, Avatar
+  Radio, RadioGroup, Alert, Card, CardContent, CardMedia,
+  Divider, Snackbar, Container, Avatar
 } from "@mui/material";
 import {
-  CreditCard, Money, LocationOn, CheckCircle, Security, ArrowBack, LocalShipping, ReceiptLong, Lock
+  CreditCard, Money, LocalShipping, CheckCircle, Security, ArrowBack, ReceiptLong, Lock, CardGiftcard, AutoAwesome
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -21,7 +21,6 @@ export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
-  const theme = useTheme();
 
   const buyNowItem = location.state?.buyNowItem ?? null;
   const itemsToShow = useMemo(
@@ -48,6 +47,7 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
 
+  /* ---------- CALCULATION UPDATES (NO TAX/SHIPPING) ---------- */
   const subtotal = useMemo(
     () =>
       itemsToShow.reduce(
@@ -57,9 +57,8 @@ export default function CheckoutPage() {
     [itemsToShow]
   );
 
-  const shippingFee = subtotal > 999 ? 0 : 50;
-  const tax = subtotal * 0.18;
-  const totalAmount = subtotal + shippingFee + tax;
+  // LOGIC CHANGE: No Shipping Fee, No Tax. Total = Subtotal.
+  const totalAmount = subtotal;
 
   /* ---------- AUTH (FAST, NON-BLOCKING) ---------- */
   useEffect(() => {
@@ -85,8 +84,8 @@ export default function CheckoutPage() {
       user_id: data?.user?.id || null,
       items: itemsToShow,
       subtotal,
-      shipping_fee: shippingFee,
-      tax,
+      shipping_fee: 0, // Set to 0
+      tax: 0,          // Set to 0
       total_amount: Number(totalAmount.toFixed(2)),
       shipping_info: shippingInfo,
       payment_method: method,
@@ -413,7 +412,6 @@ export default function CheckoutPage() {
                                                 <Typography variant="body2" color="text.secondary">Cards, UPI, NetBanking. Fast & Secure.</Typography>
                                             </Box>
                                             <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-                                                {/* Mock Card Icons */}
                                                 <Box sx={{ width: 30, height: 20, bgcolor: '#eee', borderRadius: 1 }} />
                                                 <Box sx={{ width: 30, height: 20, bgcolor: '#eee', borderRadius: 1 }} />
                                             </Box>
@@ -530,15 +528,32 @@ export default function CheckoutPage() {
                         <Typography>Subtotal</Typography>
                         <Typography sx={{ color: '#fff' }}>₹{subtotal.toFixed(2)}</Typography>
                     </Box>
-                    <Box sx={{ ...styles.summaryRow, color: '#aaa' }}>
-                        <Typography>Shipping</Typography>
-                        <Typography sx={{ color: shippingFee === 0 ? '#4caf50' : '#fff' }}>
-                            {shippingFee === 0 ? "FREE" : `₹${shippingFee}`}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ ...styles.summaryRow, color: '#aaa' }}>
-                        <Typography>Tax (18%)</Typography>
-                        <Typography sx={{ color: '#fff' }}>₹{tax.toFixed(2)}</Typography>
+                    
+                    {/* MYSTERY GIFT PROMO */}
+                    <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        mb: 2,
+                        p: 1.5,
+                        borderRadius: '12px',
+                        background: 'linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1))',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ animation: 'bounce 2s infinite' }}>
+                                <CardGiftcard sx={{ color: '#ff4081' }} />
+                            </Box>
+                            <Box>
+                                <Typography variant="caption" sx={{ color: '#ff4081', fontWeight: 900, letterSpacing: '0.5px' }}>
+                                    LIMITED OFFER
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
+                                    Delivery + Mystery Gift
+                                </Typography>
+                            </Box>
+                         </Box>
+                         <Typography sx={{ color: '#00e676', fontWeight: 900 }}>FREE</Typography>
                     </Box>
 
                     <Divider sx={{ borderColor: '#333', my: 3 }} />
@@ -579,6 +594,11 @@ export default function CheckoutPage() {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-5px);}
+            60% {transform: translateY(-3px);}
         }
       `}</style>
     </Box>

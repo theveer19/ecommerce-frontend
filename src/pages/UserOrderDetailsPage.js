@@ -7,27 +7,27 @@ import {
 } from "@mui/material";
 import { 
   ArrowLeft, Printer, Share2, Package, Check, 
-  MapPin, CreditCard, ShoppingBag, Receipt 
+  MapPin, CreditCard, Receipt 
 } from "lucide-react";
 
-export default function UserOrderDetailsPage() {
+export default function UserOrderDetailsPage({ session }) {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState({ open: false, message: "" });
 
-  // --- FETCH LOGIC ---
+  /* ---------- FETCH ORDER ---------- */
   const fetchUserOrder = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/login'); return; }
+      if (!session?.user) return;
 
       const { data, error } = await supabase
         .from("orders")
         .select(`*, order_items (*, product:products(*))`)
         .eq("id", id)
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .single();
 
       if (error) throw error;
@@ -40,225 +40,212 @@ export default function UserOrderDetailsPage() {
 
       setOrder({ ...data, shipping_address: address });
     } catch (err) {
-      console.error(err);
-      navigate('/orders');
+      console.error("ORDER FETCH ERROR:", err);
+      navigate("/orders", { replace: true });
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, navigate, session]);
 
   useEffect(() => {
     fetchUserOrder();
   }, [fetchUserOrder]);
 
-  // --- ACTIONS ---
+  /* ---------- HELPERS ---------- */
   const handlePrint = () => window.print();
+
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
       await navigator.share({ title: `Order #${order.order_number}`, url });
     } else {
-      navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(url);
       setNotification({ open: true, message: "LINK COPIED" });
     }
   };
 
   const getStatusStep = (status) => {
-    const steps = ['pending', 'processing', 'shipped', 'delivered'];
+    const steps = ["pending", "processing", "shipped", "delivered"];
     return steps.indexOf(status?.toLowerCase());
   };
 
-  if (loading) return <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><CircularProgress sx={{ color: 'black' }} /></Box>;
+  /* ---------- STATES ---------- */
+  if (loading) {
+    return (
+      <Box sx={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <CircularProgress sx={{ color: "black" }} />
+      </Box>
+    );
+  }
+
   if (!order) return null;
 
   const currentStep = getStatusStep(order.status);
 
   return (
     <Box sx={styles.pageBackground}>
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes float { 0% { transform: translateY(0px) rotateX(0deg); } 50% { transform: translateY(-5px) rotateX(1deg); } 100% { transform: translateY(0px) rotateX(0deg); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .invoice-barcode {
-          height: 40px;
-          width: 100%;
-          background: repeating-linear-gradient(to right, #000 0px, #000 2px, transparent 2px, transparent 4px, #000 4px, #000 8px, transparent 8px, transparent 9px);
-          opacity: 0.8;
-        }
-      `}</style>
-
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 }, py: 6 }}>
-        
+
         {/* TOP NAV */}
         <Box sx={styles.topNav}>
-          <Button 
-            startIcon={<ArrowLeft size={18} />} 
-            onClick={() => navigate('/orders')}
+          <Button
+            startIcon={<ArrowLeft size={18} />}
+            onClick={() => navigate("/orders")}
             sx={styles.backBtn}
           >
             RETURN TO ORDERS
           </Button>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <IconButton onClick={handleShare} sx={styles.iconBtn}><Share2 size={20} /></IconButton>
-            <IconButton onClick={handlePrint} sx={styles.iconBtn}><Printer size={20} /></IconButton>
+
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <IconButton onClick={handleShare} sx={styles.iconBtn}>
+              <Share2 size={20} />
+            </IconButton>
+            <IconButton onClick={handlePrint} sx={styles.iconBtn}>
+              <Printer size={20} />
+            </IconButton>
           </Box>
         </Box>
 
         <Grid container spacing={6}>
-          
-          {/* LEFT: ORDER STATUS & ITEMS */}
-          <Grid item xs={12} md={7} sx={{ animation: 'slideIn 0.6s ease-out' }}>
-            
-            <Box sx={{ mb: 6 }}>
-              <Typography variant="h1" sx={styles.pageTitle}>ORDER #{order.order_number}</Typography>
-              <Typography sx={styles.dateLabel}>
-                PLACED ON {new Date(order.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase()}
-              </Typography>
-            </Box>
+          {/* LEFT */}
+          <Grid item xs={12} md={7}>
+            <Typography sx={styles.pageTitle}>
+              ORDER #{order.order_number}
+            </Typography>
 
-            {/* TRACKING TIMELINE */}
+            <Typography sx={styles.dateLabel}>
+              PLACED ON{" "}
+              {new Date(order.created_at).toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              }).toUpperCase()}
+            </Typography>
+
+            {/* STATUS */}
             <Box sx={styles.glassCard}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
-                <Package size={24} color="black" />
-                <Typography sx={styles.sectionHeader}>SHIPMENT STATUS</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 4, gap: 2 }}>
+                <Package size={24} />
+                <Typography sx={styles.sectionHeader}>
+                  SHIPMENT STATUS
+                </Typography>
               </Box>
-              
+
               <Box sx={styles.timelineContainer}>
-                {['ORDERED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].map((label, index) => (
+                {["ORDERED", "PROCESSING", "SHIPPED", "DELIVERED"].map((label, index) => (
                   <Box key={label} sx={styles.timelineStep}>
-                    <Box sx={{ 
-                      ...styles.timelineDot, 
-                      bgcolor: index <= currentStep ? 'black' : '#eee',
-                      color: index <= currentStep ? 'white' : 'transparent',
-                      borderColor: index <= currentStep ? 'black' : '#eee'
-                    }}>
+                    <Box
+                      sx={{
+                        ...styles.timelineDot,
+                        bgcolor: index <= currentStep ? "black" : "#eee",
+                        color: index <= currentStep ? "white" : "transparent",
+                        borderColor: index <= currentStep ? "black" : "#eee"
+                      }}
+                    >
                       <Check size={12} strokeWidth={4} />
                     </Box>
-                    <Typography sx={{ 
-                      ...styles.timelineText, 
-                      color: index <= currentStep ? 'black' : '#999',
-                      fontWeight: index <= currentStep ? 800 : 500
-                    }}>
+
+                    <Typography
+                      sx={{
+                        ...styles.timelineText,
+                        color: index <= currentStep ? "black" : "#999",
+                        fontWeight: index <= currentStep ? 800 : 500
+                      }}
+                    >
                       {label}
                     </Typography>
-                    {/* Connecting Line */}
-                    {index < 3 && <Box sx={{ ...styles.timelineLine, bgcolor: index < currentStep ? 'black' : '#eee' }} />}
+
+                    {index < 3 && (
+                      <Box
+                        sx={{
+                          ...styles.timelineLine,
+                          bgcolor: index < currentStep ? "black" : "#eee"
+                        }}
+                      />
+                    )}
                   </Box>
                 ))}
               </Box>
-
-              {order.tracking_number && (
-                <Box sx={styles.trackingBox}>
-                  <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#666', mb: 0.5 }}>TRACKING ID</Typography>
-                  <Typography sx={{ fontSize: '16px', fontWeight: 900, letterSpacing: '1px' }}>{order.tracking_number}</Typography>
-                  <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#999', mt: 0.5 }}>{order.shipping_carrier?.toUpperCase()}</Typography>
-                </Box>
-              )}
             </Box>
 
-            {/* ORDER ITEMS LIST */}
+            {/* ITEMS */}
             <Box sx={{ mt: 4 }}>
-              <Typography sx={{ ...styles.sectionHeader, mb: 3 }}>PURCHASED ASSETS ({order.order_items.length})</Typography>
-              {order.order_items.map((item, idx) => (
-                <Box key={item.id} sx={{ ...styles.itemCard, animationDelay: `${idx * 0.1}s` }}>
-                  <img src={item.product?.image_url} alt={item.product?.name} style={styles.itemImg} />
+              <Typography sx={{ ...styles.sectionHeader, mb: 3 }}>
+                PURCHASED ASSETS ({order.order_items.length})
+              </Typography>
+
+              {order.order_items.map((item) => (
+                <Box key={item.id} sx={styles.itemCard}>
+                  <img
+                    src={item.product?.image_url}
+                    alt={item.product?.name}
+                    style={styles.itemImg}
+                  />
                   <Box sx={{ flex: 1 }}>
-                    <Typography sx={styles.itemName}>{item.product?.name}</Typography>
-                    <Typography sx={styles.itemMeta}>SIZE: {item.size || 'N/A'} • QTY: {item.quantity}</Typography>
+                    <Typography sx={styles.itemName}>
+                      {item.product?.name}
+                    </Typography>
+                    <Typography sx={styles.itemMeta}>
+                      QTY: {item.quantity}
+                    </Typography>
                   </Box>
-                  <Typography sx={styles.itemPrice}>₹{item.price_at_time?.toLocaleString()}</Typography>
+                  <Typography sx={styles.itemPrice}>
+                    ₹{item.price_at_time}
+                  </Typography>
                 </Box>
               ))}
             </Box>
           </Grid>
 
-          {/* RIGHT: 3D INVOICE (Sticky) */}
+          {/* RIGHT */}
           <Grid item xs={12} md={5}>
             <Box sx={styles.invoiceWrapper}>
               <Paper sx={styles.invoicePaper}>
-                
-                {/* INVOICE HEADER */}
-                <Box sx={{ textAlign: 'center', mb: 4 }}>
-                  <Typography sx={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1 }}>ONE-T</Typography>
-                  <Typography sx={{ fontSize: '10px', letterSpacing: '4px', color: '#666', mt: 0.5 }}>OFFICIAL INVOICE</Typography>
-                </Box>
+                <Typography sx={{ fontSize: 32, fontWeight: 900 }}>
+                  ONE-T
+                </Typography>
 
-                <Divider sx={{ borderStyle: 'dashed', borderColor: '#000', mb: 4 }} />
+                <Divider sx={{ my: 3 }} />
 
-                {/* BILLING DETAILS */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                  <Grid item xs={6}>
-                    <Box sx={styles.invoiceBlock}>
-                      <Typography sx={styles.invoiceLabel}><MapPin size={12} /> SHIP TO</Typography>
-                      {order.shipping_address ? (
-                        <Typography sx={styles.invoiceValue}>
-                          {order.shipping_address.full_name}<br/>
-                          {order.shipping_address.address_line1}<br/>
-                          {order.shipping_address.city}, {order.shipping_address.state}
-                        </Typography>
-                      ) : <Typography sx={styles.invoiceValue}>N/A</Typography>}
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box sx={styles.invoiceBlock}>
-                      <Typography sx={styles.invoiceLabel}><CreditCard size={12} /> PAYMENT</Typography>
-                      <Typography sx={styles.invoiceValue}>
-                        {order.payment_method?.replace('_', ' ').toUpperCase()}<br/>
-                        STATUS: {order.payment_status?.toUpperCase()}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
+                <Typography sx={styles.invoiceLabel}>
+                  <MapPin size={12} /> SHIP TO
+                </Typography>
 
-                {/* COST BREAKDOWN */}
-                <Box sx={{ bgcolor: '#f9f9f9', p: 3, borderRadius: '12px' }}>
-                  <Box sx={styles.costRow}>
-                    <Typography sx={styles.costLabel}>SUBTOTAL</Typography>
-                    <Typography sx={styles.costValue}>₹{order.subtotal}</Typography>
-                  </Box>
-                  <Box sx={styles.costRow}>
-                    <Typography sx={styles.costLabel}>SHIPPING</Typography>
-                    <Typography sx={styles.costValue}>₹{order.shipping_cost}</Typography>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                  <Box sx={styles.costRow}>
-                    <Typography sx={{ ...styles.costLabel, fontSize: '14px', color: 'black' }}>TOTAL PAID</Typography>
-                    <Typography sx={{ ...styles.costValue, fontSize: '20px' }}>₹{order.total_amount}</Typography>
-                  </Box>
-                </Box>
+                <Typography sx={styles.invoiceValue}>
+                  {order.shipping_address?.full_name}
+                </Typography>
 
-                {/* FOOTER */}
-                <Box sx={{ mt: 5, textAlign: 'center', opacity: 0.6 }}>
-                  <div className="invoice-barcode"></div>
-                  <Typography sx={{ fontSize: '9px', mt: 1, letterSpacing: '2px' }}>AUTHENTICATED TRANSACTION</Typography>
-                </Box>
+                <Divider sx={{ my: 3 }} />
 
-                <Button 
-                  fullWidth 
+                <Typography sx={styles.invoiceLabel}>
+                  <CreditCard size={12} /> PAYMENT
+                </Typography>
+
+                <Typography sx={styles.invoiceValue}>
+                  {order.payment_method?.toUpperCase()}
+                </Typography>
+
+                <Button
+                  fullWidth
                   startIcon={<Receipt size={16} />}
-                  variant="outlined" 
+                  variant="outlined"
                   sx={styles.invoiceBtn}
-                  onClick={() => window.print()}
+                  onClick={handlePrint}
                 >
                   DOWNLOAD PDF
                 </Button>
-
               </Paper>
             </Box>
           </Grid>
-
         </Grid>
       </Container>
 
       <Snackbar
         open={notification.open}
         autoHideDuration={2000}
-        onClose={() => setNotification({ ...notification, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setNotification({ open: false, message: "" })}
       >
-        <Alert severity="success" sx={{ bgcolor: 'black', color: 'white', fontWeight: 700, borderRadius: '50px' }}>
-          {notification.message}
-        </Alert>
+        <Alert severity="success">{notification.message}</Alert>
       </Snackbar>
     </Box>
   );
