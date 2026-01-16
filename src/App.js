@@ -10,6 +10,8 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Box, CircularProgress } from "@mui/material";
+// 1. IMPORT HelmetProvider
+import { HelmetProvider } from 'react-helmet-async';
 
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
@@ -252,17 +254,20 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyles />
-      <CssBaseline />
-      <WishlistProvider>
-        <CartProvider>
-          <Router>
-            <ScrollToTop />
-            <AppContent />
-          </Router>
-        </CartProvider>
-      </WishlistProvider>
-    </ThemeProvider>
+    // 2. WRAP THE APP IN HELMET PROVIDER TO FIX THE ERROR
+    <HelmetProvider>
+      <ThemeProvider theme={theme}>
+        <GlobalStyles />
+        <CssBaseline />
+        <WishlistProvider>
+          <CartProvider>
+            <Router>
+              <ScrollToTop />
+              <AppContent />
+            </Router>
+          </CartProvider>
+        </WishlistProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }

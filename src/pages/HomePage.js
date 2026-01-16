@@ -4,8 +4,9 @@ import { Box, Typography, Button, Container } from '@mui/material';
 import { ArrowDown } from 'lucide-react';
 import { supabase } from '../supabase/supabaseClient';
 import ProductCard from '../components/ProductCard';
+import SEO from '../components/SEO'; // 👈 SEO Import
 
-// Helper Component for Hover-to-Play Video
+// --- HELPER COMPONENT: HOVER VIDEO ---
 const HoverVideo = ({ src, title }) => {
   const videoRef = useRef(null);
 
@@ -51,7 +52,6 @@ const HoverVideo = ({ src, title }) => {
           objectFit: 'cover', 
           transition: 'transform 0.5s ease'
         }}
-        onError={(e) => console.error(`Failed to load video: ${src}`, e)}
         src={src} 
       />
       <Box sx={{ position: 'absolute', bottom: 20, left: 0, right: 0, textAlign: 'center', pointerEvents: 'none' }}>
@@ -63,6 +63,7 @@ const HoverVideo = ({ src, title }) => {
   );
 };
 
+// --- MAIN PAGE COMPONENT ---
 export default function HomePage({ session }) {
   const [products, setProducts] = useState([]);
 
@@ -84,7 +85,14 @@ export default function HomePage({ session }) {
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
       
-      {/* 1. HERO VIDEO */}
+      {/* 1. SEO CONFIGURATION */}
+      <SEO 
+        title="Home"
+        description="Shop the latest oversized t-shirts, premium hoodies, and streetwear fashion at OneT. Free shipping worldwide."
+        keywords="streetwear, oversized t-shirt, fashion, OneT, winter collection, hoodies"
+      />
+
+      {/* 2. HERO VIDEO (Sticky Background) */}
       <Box sx={{ position: 'sticky', top: 0, height: { xs: '100dvh', md: '100vh' }, width: '100%', overflow: 'hidden', zIndex: 0 }}>
         <video 
           autoPlay loop muted playsInline 
@@ -99,10 +107,10 @@ export default function HomePage({ session }) {
         </Box>
       </Box>
 
-      {/* 2. MAIN CONTENT LAYER */}
+      {/* 3. MAIN CONTENT LAYER (Curtain Effect) */}
       <Box sx={{ position: 'relative', zIndex: 10, backgroundColor: '#ffffff', minHeight: '100vh', paddingTop: '5px', paddingBottom: '0px', boxShadow: '0 -10px 30px rgba(0,0,0,0.1)' }}>
         
-        {/* SECTION A */}
+        {/* SECTION A: FIRST PRODUCT GRID */}
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 }, mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, mt: 2 }}>
             <Typography sx={{ fontSize: '10px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', lineHeight: 1 }}>LATEST DROP</Typography>
@@ -115,7 +123,7 @@ export default function HomePage({ session }) {
           </Box>
         </Container>
 
-        {/* SECTION B */}
+        {/* SECTION B: SECOND VIDEO BANNER */}
         <Box sx={{ width: '100%', height: { xs: '60vh', md: '80vh' }, overflow: 'hidden', position: 'relative', backgroundColor: '#000' }}>
           <video autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} src="/videos/hero2.mp4" onError={(e) => console.error("Error loading Hero2:", e.target.src)} />
           <Box sx={{ position: 'absolute', bottom: 40, left: 20, color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.5)', textAlign: 'left' }}>
@@ -124,7 +132,7 @@ export default function HomePage({ session }) {
           </Box>
         </Box>
 
-        {/* SECTION C */}
+        {/* SECTION C: SECOND PRODUCT GRID */}
         <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 }, mt: 2, mb: 0, pb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3 }}>
             <Typography sx={{ fontSize: '10px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', lineHeight: 1 }}>MORE FROM ONET</Typography>
@@ -137,37 +145,18 @@ export default function HomePage({ session }) {
           </Box>
         </Container>
 
-        {/* SECTION D */}
+        {/* SECTION D: STORE VIDEOS ROW */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, width: '100%', borderTop: '1px solid #eee' }}>
           <HoverVideo src="/videos/store1.mp4" title="DELHI STORE" />
           <HoverVideo src="/videos/store2.mp4" title="MUMBAI STORE" />
           <HoverVideo src="/videos/store3.mp4" title="BANGALORE STORE" />
         </Box>
 
-        {/* === SECTION E: SHIPPING MARQUEE (🟢 NEW) === */}
-        <Box sx={{ 
-          backgroundColor: '#000', 
-          color: '#fff', 
-          height: '40px', 
-          overflow: 'hidden', 
-          display: 'flex', 
-          alignItems: 'center',
-          whiteSpace: 'nowrap'
-        }}>
-          <Box sx={{ 
-            display: 'flex', 
-            animation: 'marquee 20s linear infinite', // Continuous scroll
-            width: 'max-content'
-          }}>
-            {/* Repeated text for seamless loop */}
+        {/* SECTION E: SHIPPING MARQUEE */}
+        <Box sx={{ backgroundColor: '#000', color: '#fff', height: '40px', overflow: 'hidden', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+          <Box sx={{ display: 'flex', animation: 'marquee 20s linear infinite', width: 'max-content' }}>
             {[...Array(20)].map((_, i) => (
-              <Typography key={i} component="span" sx={{ 
-                fontSize: '11px', 
-                fontWeight: 700, 
-                letterSpacing: '2px', 
-                mx: 4, 
-                textTransform: 'uppercase'
-              }}>
+              <Typography key={i} component="span" sx={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', mx: 4, textTransform: 'uppercase' }}>
                 SHIPPING ACROSS THE WORLD
               </Typography>
             ))}
@@ -176,10 +165,11 @@ export default function HomePage({ session }) {
 
       </Box>
 
+      {/* GLOBAL ANIMATIONS */}
       <style>{`
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-5px);} 60% {transform: translateY(-3px);} }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       `}</style>
     </Box>
   );
-} 
+}
