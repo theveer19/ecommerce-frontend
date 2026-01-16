@@ -8,13 +8,12 @@ import {
   Divider, Snackbar, Container, Avatar
 } from "@mui/material";
 import {
-  CreditCard, Money, LocalShipping, CheckCircle, Security, ArrowBack, ReceiptLong, Lock, CardGiftcard, AutoAwesome
+  CreditCard, Money, LocalShipping, CheckCircle, Security, ArrowBack, ReceiptLong, Lock, CardGiftcard
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BACKEND_URL = "https://ecommerce-backend-qqhi.onrender.com";
 const RAZORPAY_KEY = process.env.REACT_APP_RAZORPAY_KEY_ID;
-
 const steps = ["Shipping", "Payment", "Review"];
 
 export default function CheckoutPage() {
@@ -40,14 +39,12 @@ export default function CheckoutPage() {
     phone: "",
     address: "",
     city: "",
-    state: "",
     zipCode: "",
     country: "India",
   });
 
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
 
-  /* ---------- CALCULATION UPDATES (NO TAX/SHIPPING) ---------- */
   const subtotal = useMemo(
     () =>
       itemsToShow.reduce(
@@ -57,18 +54,13 @@ export default function CheckoutPage() {
     [itemsToShow]
   );
 
-  // LOGIC CHANGE: No Shipping Fee, No Tax. Total = Subtotal.
   const totalAmount = subtotal;
 
-  /* ---------- AUTH (FAST, NON-BLOCKING) ---------- */
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data?.session || null);
       if (data?.session?.user?.email) {
-        setShippingInfo((p) => ({
-          ...p,
-          email: data.session.user.email,
-        }));
+        setShippingInfo((p) => ({ ...p, email: data.session.user.email }));
       }
     });
   }, []);
@@ -76,7 +68,6 @@ export default function CheckoutPage() {
   const showMessage = (type, text) =>
     setSnackbar({ open: true, type, text });
 
-  /* ---------- SAVE ORDER ---------- */
   const saveOrderToBackend = async (method, paymentDetails = null) => {
     const { data } = await supabase.auth.getUser();
 
@@ -84,8 +75,8 @@ export default function CheckoutPage() {
       user_id: data?.user?.id || null,
       items: itemsToShow,
       subtotal,
-      shipping_fee: 0, // Set to 0
-      tax: 0,          // Set to 0
+      shipping_fee: 0,
+      tax: 0,
       total_amount: Number(totalAmount.toFixed(2)),
       shipping_info: shippingInfo,
       payment_method: method,
@@ -99,28 +90,33 @@ export default function CheckoutPage() {
     });
 
     const json = await res.json();
-    if (!json.success) throw new Error("Order save failed");
+    if (!json.success) throw new Error();
     return json.order;
   };
 
-  /* ---------- PLACE ORDER ---------- */
   const handlePlaceOrder = async () => {
+    setLoading(true);
+
     if (paymentMethod === "cod") {
       try {
-        setLoading(true);
         const order = await saveOrderToBackend("cod");
         if (!buyNowItem) clearCart();
         navigate("/thank-you", { state: { orderDetails: order } });
       } catch {
-        showMessage("error", "Order failed. Try again.");
+        showMessage("error", "Order failed");
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    // 🔥 Razorpay (FAST)
     try {
+      if (!window.Razorpay) {
+        showMessage("error", "Payment service still loading. Try again.");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(`${BACKEND_URL}/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,32 +131,33 @@ export default function CheckoutPage() {
         amount: orderData.amount,
         currency: "INR",
         order_id: orderData.id,
-        name: "ONE-T Fashion",
+
         handler: async (response) => {
           try {
             const saved = await saveOrderToBackend("razorpay", response);
             if (!buyNowItem) clearCart();
-            navigate("/thank-you", {
-              state: { orderDetails: saved },
-            });
+            navigate("/thank-you", { state: { orderDetails: saved } });
           } catch {
             showMessage("error", "Payment done but order save failed");
+          } finally {
+            setLoading(false);
           }
         },
-        prefill: {
-          name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-          email: shippingInfo.email,
-          contact: shippingInfo.phone,
+
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            showMessage("error", "Payment cancelled");
+          },
         },
-        theme: { color: "#000" },
       };
 
       new window.Razorpay(options).open();
     } catch {
+      setLoading(false);
       showMessage("error", "Payment initialization failed");
     }
   };
-
   /* ---------- STEP VALIDATION ---------- */
   const handleNext = () => {
     if (activeStep === 0) {

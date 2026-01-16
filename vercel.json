@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.onet.co.in" }],
+      "destination": "https://onet.co.in/$1",
+      "permanent": true
+    }
+  ]
+}

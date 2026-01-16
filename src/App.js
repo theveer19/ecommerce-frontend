@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
   useLocation,
-  useNavigate
+  useNavigate,
 } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -24,7 +24,7 @@ import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 
 /* ---------- PAGES ---------- */
-import CheckoutPage from "./pages/CheckoutPage"; // NOT lazy
+import CheckoutPage from "./pages/CheckoutPage";
 
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ProductList = lazy(() => import("./components/ProductList"));
@@ -37,10 +37,12 @@ const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
 const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
 
-/* ---------- ADMIN PAGES (ONLY ADDITION) ---------- */
+/* ---------- ADMIN ---------- */
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminOrdersPage = lazy(() => import("./pages/AdminOrders"));
-const AdminOrderDetailsPage = lazy(() => import("./pages/AdminOrderDetailsPage"));
+const AdminOrderDetailsPage = lazy(() =>
+  import("./pages/AdminOrderDetailsPage")
+);
 const ProductForm = lazy(() => import("./components/ProductForm"));
 
 /* ---------- AUTH GUARD ---------- */
@@ -63,7 +65,14 @@ const RequireAdmin = ({ role, children }) => {
 const theme = createTheme({});
 
 const PageLoader = () => (
-  <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+  <Box
+    sx={{
+      minHeight: "70vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
     <CircularProgress />
   </Box>
 );
@@ -76,16 +85,21 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
 
-    setUserRole(data?.role === "admin" ? "admin" : "customer");
+      setUserRole(data?.role === "admin" ? "admin" : "customer");
+    } catch {
+      setUserRole("customer");
+    }
   };
 
   useEffect(() => {
+    // Preload Razorpay ONCE
     if (!window.Razorpay) {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -109,6 +123,7 @@ function AppContent() {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
         setSession(newSession);
+
         if (newSession?.user) {
           await fetchUserRole(newSession.user.id);
         } else {
@@ -136,7 +151,6 @@ function AppContent() {
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* PUBLIC */}
           <Route path="/" element={<HomePage session={session} />} />
           <Route path="/products" element={<ProductList />} />
           <Route path="/product/:id" element={<ProductDetailsPage />} />
@@ -146,18 +160,86 @@ function AppContent() {
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/login" element={<Auth />} />
 
-          {/* USER */}
-          <Route path="/checkout" element={<RequireAuth session={session}><CheckoutPage /></RequireAuth>} />
-          <Route path="/orders" element={<RequireAuth session={session}><OrderPage /></RequireAuth>} />
-          <Route path="/orders/:id" element={<RequireAuth session={session}><UserOrderDetailsPage /></RequireAuth>} />
-          <Route path="/wishlist" element={<RequireAuth session={session}><WishlistPage /></RequireAuth>} />
+          <Route
+            path="/checkout"
+            element={
+              <RequireAuth session={session}>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
 
-          {/* ADMIN — FIXED */}
-          <Route path="/admin" element={<RequireAdmin role={userRole}><AdminPage /></RequireAdmin>} />
-          <Route path="/admin/orders" element={<RequireAdmin role={userRole}><AdminOrdersPage /></RequireAdmin>} />
-          <Route path="/admin/orders/:id" element={<RequireAdmin role={userRole}><AdminOrderDetailsPage /></RequireAdmin>} />
-          <Route path="/admin/products/new" element={<RequireAdmin role={userRole}><ProductForm /></RequireAdmin>} />
-          <Route path="/admin/products/edit/:id" element={<RequireAdmin role={userRole}><ProductForm /></RequireAdmin>} />
+          <Route
+            path="/orders"
+            element={
+              <RequireAuth session={session}>
+                <OrderPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/orders/:id"
+            element={
+              <RequireAuth session={session}>
+                <UserOrderDetailsPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/wishlist"
+            element={
+              <RequireAuth session={session}>
+                <WishlistPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin role={userRole}>
+                <AdminPage />
+              </RequireAdmin>
+            }
+          />
+
+          <Route
+            path="/admin/orders"
+            element={
+              <RequireAdmin role={userRole}>
+                <AdminOrdersPage />
+              </RequireAdmin>
+            }
+          />
+
+          <Route
+            path="/admin/orders/:id"
+            element={
+              <RequireAdmin role={userRole}>
+                <AdminOrderDetailsPage />
+              </RequireAdmin>
+            }
+          />
+
+          <Route
+            path="/admin/products/new"
+            element={
+              <RequireAdmin role={userRole}>
+                <ProductForm />
+              </RequireAdmin>
+            }
+          />
+
+          <Route
+            path="/admin/products/edit/:id"
+            element={
+              <RequireAdmin role={userRole}>
+                <ProductForm />
+              </RequireAdmin>
+            }
+          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
