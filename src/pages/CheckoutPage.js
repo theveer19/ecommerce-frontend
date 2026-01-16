@@ -3,12 +3,36 @@ import { useCart } from "../context/CartContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 import {
-  Box, Stepper, Step, StepLabel, Button, Typography, TextField, Paper, Grid,
-  Radio, RadioGroup, Alert, Card, CardContent, CardMedia,
-  Divider, Snackbar, Container, Avatar
+  Box,
+  Stepper,
+  Step,
+  StepLabel,
+  Button,
+  Typography,
+  TextField,
+  Paper,
+  Grid,
+  Radio,
+  RadioGroup,
+  Alert,
+  Card,
+  CardContent,
+  CardMedia,
+  Divider,
+  Snackbar,
+  Container,
+  Avatar,
 } from "@mui/material";
 import {
-  CreditCard, Money, LocalShipping, CheckCircle, Security, ArrowBack, ReceiptLong, Lock, CardGiftcard
+  CreditCard,
+  Money,
+  LocalShipping,
+  CheckCircle,
+  Security,
+  ArrowBack,
+  ReceiptLong,
+  Lock,
+  CardGiftcard,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -30,7 +54,11 @@ export default function CheckoutPage() {
   const [session, setSession] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, type: "", text: "" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    type: "",
+    text: "",
+  });
 
   const [shippingInfo, setShippingInfo] = useState({
     firstName: "",
@@ -60,7 +88,10 @@ export default function CheckoutPage() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data?.session || null);
       if (data?.session?.user?.email) {
-        setShippingInfo((p) => ({ ...p, email: data.session.user.email }));
+        setShippingInfo((p) => ({
+          ...p,
+          email: data.session.user.email,
+        }));
       }
     });
   }, []);
@@ -136,7 +167,9 @@ export default function CheckoutPage() {
           try {
             const saved = await saveOrderToBackend("razorpay", response);
             if (!buyNowItem) clearCart();
-            navigate("/thank-you", { state: { orderDetails: saved } });
+            navigate("/thank-you", {
+              state: { orderDetails: saved },
+            });
           } catch {
             showMessage("error", "Payment done but order save failed");
           } finally {
@@ -158,13 +191,16 @@ export default function CheckoutPage() {
       showMessage("error", "Payment initialization failed");
     }
   };
-  /* ---------- STEP VALIDATION ---------- */
+
   const handleNext = () => {
-    if (activeStep === 0) {
-      if (!shippingInfo.firstName || !shippingInfo.phone || !shippingInfo.address) {
-        showMessage("error", "Please fill all shipping fields");
-        return;
-      }
+    if (
+      activeStep === 0 &&
+      (!shippingInfo.firstName ||
+        !shippingInfo.phone ||
+        !shippingInfo.address)
+    ) {
+      showMessage("error", "Please fill all shipping fields");
+      return;
     }
     setActiveStep((p) => p + 1);
   };
