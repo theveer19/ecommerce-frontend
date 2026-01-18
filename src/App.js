@@ -10,20 +10,19 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Box, CircularProgress } from "@mui/material";
-// 1. IMPORT HelmetProvider
-import { HelmetProvider } from 'react-helmet-async';
+import { HelmetProvider } from "react-helmet-async";
 
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AnnouncementBar from "./components/AnnouncementBar";
-import LoadingScreen from "./components/LoadingScreen";
 import GlobalStyles from "./components/GlobalStyles";
 import ScrollToTop from "./components/ScrollToTop";
 import { supabase } from "./supabase/supabaseClient";
 
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 /* ---------- PAGES ---------- */
 import CheckoutPage from "./pages/CheckoutPage";
@@ -37,7 +36,9 @@ const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const ThankYouPage = lazy(() => import("./pages/ThankYouPage"));
 const OrderPage = lazy(() => import("./pages/OrderPage"));
-const UserOrderDetailsPage = lazy(() => import("./pages/UserOrderDetailsPage"));
+const UserOrderDetailsPage = lazy(() =>
+  import("./pages/UserOrderDetailsPage")
+);
 
 /* ---------- ADMIN ---------- */
 const AdminPage = lazy(() => import("./pages/AdminPage"));
@@ -47,12 +48,37 @@ const AdminOrderDetailsPage = lazy(() =>
 );
 const ProductForm = lazy(() => import("./components/ProductForm"));
 
-/* ---------- AUTH GUARD ---------- */
-const RequireAuth = ({ session, children }) => {
+/* ---------- AUTH GUARD (BULLETPROOF) ---------- */
+const RequireAuth = ({ children }) => {
   const location = useLocation();
-  if (!session) {
+  const [checked, setChecked] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
+
+      if (!mounted) return;
+
+      setAuthenticated(!!data?.user);
+      setChecked(true);
+    };
+
+    checkAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!checked) return null;
+
+  if (!authenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
   return children;
 };
 
@@ -84,7 +110,6 @@ function AppContent() {
 
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState("customer");
-  const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId) => {
     try {
@@ -101,7 +126,9 @@ function AppContent() {
   };
 
   useEffect(() => {
-    // Preload Razorpay ONCE
+    let mounted = true;
+
+    // Preload Razorpay safely
     if (!window.Razorpay) {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -111,30 +138,36 @@ function AppContent() {
 
     const init = async () => {
       const { data } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
       setSession(data?.session ?? null);
 
       if (data?.session?.user) {
-        await fetchUserRole(data.session.user.id);
+        fetchUserRole(data.session.user.id);
       }
-
-      setLoading(false);
     };
 
     init();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      (_event, newSession) => {
+        if (!mounted) return;
+
         setSession(newSession);
 
         if (newSession?.user) {
-          await fetchUserRole(newSession.user.id);
+          fetchUserRole(newSession.user.id);
         } else {
           setUserRole("customer");
         }
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -143,8 +176,6 @@ function AppContent() {
     setUserRole("customer");
     navigate("/", { replace: true });
   };
-
-  if (loading) return <LoadingScreen />;
 
   return (
     <>
@@ -165,7 +196,7 @@ function AppContent() {
           <Route
             path="/checkout"
             element={
-              <RequireAuth session={session}>
+              <RequireAuth>
                 <CheckoutPage />
               </RequireAuth>
             }
@@ -174,7 +205,7 @@ function AppContent() {
           <Route
             path="/orders"
             element={
-              <RequireAuth session={session}>
+              <RequireAuth>
                 <OrderPage />
               </RequireAuth>
             }
@@ -183,7 +214,7 @@ function AppContent() {
           <Route
             path="/orders/:id"
             element={
-              <RequireAuth session={session}>
+              <RequireAuth>
                 <UserOrderDetailsPage />
               </RequireAuth>
             }
@@ -192,7 +223,7 @@ function AppContent() {
           <Route
             path="/wishlist"
             element={
-              <RequireAuth session={session}>
+              <RequireAuth>
                 <WishlistPage />
               </RequireAuth>
             }
@@ -254,7 +285,6 @@ function AppContent() {
 
 export default function App() {
   return (
-    // 2. WRAP THE APP IN HELMET PROVIDER TO FIX THE ERROR
     <HelmetProvider>
       <ThemeProvider theme={theme}>
         <GlobalStyles />
@@ -263,7 +293,9 @@ export default function App() {
           <CartProvider>
             <Router>
               <ScrollToTop />
-              <AppContent />
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
             </Router>
           </CartProvider>
         </WishlistProvider>

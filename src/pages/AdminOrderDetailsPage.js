@@ -2,18 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/supabaseClient";
 import {
-  Box, Typography, Paper, Grid, Card, CardContent, Button, Chip, Divider,
+  Box, Typography, Grid, Card, CardContent, Button, Chip, Divider,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select,
+  Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem,
   FormControl, InputLabel, Snackbar, Alert, CircularProgress, Avatar, List,
-  ListItem, ListItemIcon, ListItemText, Tooltip, Container
+  ListItem, ListItemIcon, ListItemText, Container
 } from "@mui/material";
 import {
-  ArrowBack, Edit, CheckCircle, Cancel, LocalShipping, AttachMoney,
-  Person, Email, LocationOn, ShoppingBag, Receipt, Print, Download, 
-  Inventory, Phone as PhoneIcon, Mail
+  ArrowBack, Edit, Print, Phone as PhoneIcon, Email
 } from "@mui/icons-material";
-import { format } from 'date-fns';
 
 export default function AdminOrderDetailsPage() {
   const { id } = useParams();
@@ -39,16 +36,24 @@ export default function AdminOrderDetailsPage() {
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      // ✅ STEP 11: Updated Query (profiles instead of users)
+      // ✅ STEP 1: Updated Query (No products join, using snapshot data)
       const { data, error } = await supabase
         .from("orders")
         .select(`
           *,
           order_items (
-            id, quantity, price_at_time, product_id,
-            products (id, name, image_url, category, brand, sku)
+            id,
+            product_name,
+            quantity,
+            price_at_time,
+            image_url
           ),
-          profiles (full_name, email, phone, avatar_url)
+          profiles (
+            full_name,
+            email,
+            phone,
+            avatar_url
+          )
         `)
         .eq("id", id)
         .single();
@@ -125,11 +130,12 @@ export default function AdminOrderDetailsPage() {
                         <TableRow key={item.id}>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Avatar src={item.products?.image_url} variant="rounded" />
-                              <Typography fontWeight={600}>{item.products?.name}</Typography>
+                              {/* ✅ STEP 2: Use direct item.image_url */}
+                              <Avatar src={item.image_url} variant="rounded" />
+                              {/* ✅ STEP 3: Use direct item.product_name */}
+                              <Typography fontWeight={600}>{item.product_name}</Typography>
                             </Box>
                           </TableCell>
-                          {/* ✅ STEP 13: Safe Math Formatting */}
                           <TableCell align="right">₹{Number(item.price_at_time || 0).toFixed(2)}</TableCell>
                           <TableCell align="center">{item.quantity}</TableCell>
                           <TableCell align="right" fontWeight={700}>₹{(Number(item.price_at_time || 0) * item.quantity).toFixed(2)}</TableCell>
@@ -147,7 +153,6 @@ export default function AdminOrderDetailsPage() {
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight={800} gutterBottom>Customer</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  {/* ✅ STEP 12: Safe Customer UI References */}
                   <Avatar src={order.profiles?.avatar_url} sx={{ width: 56, height: 56 }}>{order.profiles?.full_name?.[0] || 'C'}</Avatar>
                   <Box>
                     <Typography fontWeight={700}>{order.profiles?.full_name || order.shipping_address?.name || 'Guest'}</Typography>
@@ -166,7 +171,6 @@ export default function AdminOrderDetailsPage() {
                 <Typography variant="h6" fontWeight={800} gutterBottom>Summary</Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography color="text.secondary">Subtotal</Typography>
-                  {/* ✅ STEP 13: Safe Totals */}
                   <Typography fontWeight={600}>₹{Number(order.subtotal || 0).toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>

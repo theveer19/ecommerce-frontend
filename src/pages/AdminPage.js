@@ -50,17 +50,35 @@ export default function AdminPage() {
     } finally { setLoading(prev => ({ ...prev, products: false })); }
   };
 
+  // ✅ CHANGE 1: Fixed fetchOrders Query (No products join)
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase.from("orders").select(`*, order_items (quantity, price_at_time, products (name))`).order("created_at", { ascending: false }).limit(50);
-      if (!error) setOrders(data || []);
-    } finally { setLoading(prev => ({ ...prev, orders: false })); }
+      const { data, error } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          total_amount,
+          status,
+          created_at,
+          order_items (
+            quantity,
+            price_at_time
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (e) {
+      console.error("Admin orders error:", e);
+    } finally {
+      setLoading(prev => ({ ...prev, orders: false }));
+    }
   };
 
-  // ✅ STEP 6: VERIFIED USERS QUERY
   const fetchUsers = async () => {
     try {
-      // Correctly fetching from profiles
       const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(50);
       if (!error) setUsers(data || []);
     } finally { setLoading(prev => ({ ...prev, users: false })); }

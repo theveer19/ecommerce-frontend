@@ -42,16 +42,23 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      // ✅ STEP 7: Updated Query (profiles instead of users)
+      // ✅ STEP 1: Updated Query (No products join, using snapshot data)
       const { data, error } = await supabase
         .from("orders")
         .select(`
           *,
           order_items (
-            id, quantity, price_at_time, product_id,
-            products (name, image_url)
+            id,
+            product_name,
+            quantity,
+            price_at_time,
+            image_url
           ),
-          profiles (email, full_name, phone)
+          profiles (
+            email,
+            full_name,
+            phone
+          )
         `)
         .order("created_at", { ascending: false });
 
@@ -73,8 +80,8 @@ export default function AdminOrders() {
       filtered = filtered.filter(order =>
         order.order_number?.toLowerCase().includes(lowerTerm) ||
         order.id?.toLowerCase().includes(lowerTerm) ||
+        // Accessing name from shipping_address JSON safely
         order.shipping_address?.name?.toLowerCase().includes(lowerTerm) ||
-        // ✅ STEP 8: Filter using profiles
         order.profiles?.email?.toLowerCase().includes(lowerTerm)
       );
     }
@@ -94,7 +101,6 @@ export default function AdminOrders() {
   };
 
   const calculateStats = () => {
-    // ✅ STEP 9: Safe Totals
     const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
     return {
       totalRevenue,
@@ -180,7 +186,7 @@ export default function AdminOrders() {
                       <TableCell><Chip label={order.order_number || order.id.slice(0, 8).toUpperCase()} sx={{ borderRadius: '8px', fontWeight: 700 }} /></TableCell>
                       <TableCell>
                         <Typography variant="subtitle2" fontWeight={700}>
-                          {/* ✅ STEP 8: Safe Customer Access */}
+                          {/* Accessing name from shipping_address JSON safely */}
                           {order.shipping_address?.name || order.profiles?.full_name || 'Guest'}
                         </Typography>
                         <Typography variant="caption">{order.profiles?.email}</Typography>
@@ -189,6 +195,7 @@ export default function AdminOrders() {
                       <TableCell><Chip label={order.status?.toUpperCase()} size="small" sx={{ bgcolor: `${getStatusColor(order.status)}20`, color: getStatusColor(order.status), fontWeight: 800 }} /></TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
+                          {/* Updated navigation to match standard admin route pattern if needed, typically just viewing details */}
                           <IconButton size="small" onClick={() => { setSelectedOrder(order); setOpenDialog(true); }}><Visibility fontSize="small" /></IconButton>
                           {order.status === 'pending' && <IconButton size="small" onClick={() => handleUpdateStatus(order.id, 'processing')} sx={{ color: '#3B82F6' }}><CheckCircle fontSize="small" /></IconButton>}
                         </Box>
@@ -206,8 +213,23 @@ export default function AdminOrders() {
                 <DialogTitle>Order #{selectedOrder.order_number || selectedOrder.id.slice(0,8)}</DialogTitle>
                 <DialogContent dividers>
                   <Grid container spacing={2}>
+                    {/* Accessing JSON fields safely */}
                     <Grid item xs={6}><Typography variant="subtitle2">Customer</Typography><Typography>{selectedOrder.shipping_address?.name}</Typography></Grid>
                     <Grid item xs={6}><Typography variant="subtitle2">Shipping</Typography><Typography>{selectedOrder.shipping_address?.address}</Typography></Grid>
+                    
+                    {/* Optional: Render Items List if you want to see what they bought */}
+                    <Grid item xs={12} sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1 }}>Items Ordered</Typography>
+                        {selectedOrder.order_items?.map((item, idx) => (
+                            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, p: 1, border: '1px solid #eee', borderRadius: '8px' }}>
+                                <Avatar src={item.image_url} variant="rounded" />
+                                <Box>
+                                    <Typography variant="body2" fontWeight={600}>{item.product_name}</Typography>
+                                    <Typography variant="caption">Qty: {item.quantity} | ₹{item.price_at_time}</Typography>
+                                </Box>
+                            </Box>
+                        ))}
+                    </Grid>
                   </Grid>
                 </DialogContent>
                 <DialogActions><Button onClick={() => setOpenDialog(false)}>Close</Button></DialogActions>

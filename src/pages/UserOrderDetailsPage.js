@@ -23,22 +23,28 @@ export default function UserOrderDetailsPage({ session }) {
     try {
       if (!session?.user) return;
 
+      // ✅ CHANGE 1: Simplified Query (No products join needed)
       const { data, error } = await supabase
         .from("orders")
-        .select(`*, order_items (*, product:products(*))`)
+        .select(`
+          *,
+          order_items (
+            id,
+            product_name,
+            quantity,
+            price_at_time,
+            image_url
+          )
+        `)
         .eq("id", id)
         .eq("user_id", session.user.id)
         .single();
 
       if (error) throw error;
 
-      const { data: address } = await supabase
-        .from("addresses")
-        .select("*")
-        .eq("order_id", id)
-        .maybeSingle();
+      // ✅ CHANGE 2: Removed extra address fetch (Address is now in 'orders' table)
+      setOrder(data);
 
-      setOrder({ ...data, shipping_address: address });
     } catch (err) {
       console.error("ORDER FETCH ERROR:", err);
       navigate("/orders", { replace: true });
@@ -110,7 +116,7 @@ export default function UserOrderDetailsPage({ session }) {
           {/* LEFT */}
           <Grid item xs={12} md={7}>
             <Typography sx={styles.pageTitle}>
-              ORDER #{order.order_number}
+              ORDER #{order.order_number || order.id?.slice(0,8).toUpperCase()}
             </Typography>
 
             <Typography sx={styles.dateLabel}>
@@ -171,19 +177,25 @@ export default function UserOrderDetailsPage({ session }) {
             {/* ITEMS */}
             <Box sx={{ mt: 4 }}>
               <Typography sx={{ ...styles.sectionHeader, mb: 3 }}>
-                PURCHASED ASSETS ({order.order_items.length})
+                PURCHASED ASSETS ({order.order_items?.length || 0})
               </Typography>
 
-              {order.order_items.map((item) => (
+              {/* ✅ CHANGE 4: Added optional chaining for safety */}
+              {order.order_items?.map((item) => (
                 <Box key={item.id} sx={styles.itemCard}>
+                  {/* ✅ CHANGE 3: Correct Item Rendering */}
                   <img
-                    src={item.product?.image_url}
-                    alt={item.product?.name}
+                    src={item.image_url || "https://images.unsplash.com/photo-1558769132-cb1cb458ed44?w=150&h=150&fit=crop"}
+                    alt={item.product_name}
                     style={styles.itemImg}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1558769132-cb1cb458ed44?w=150&h=150&fit=crop";
+                    }}
                   />
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={styles.itemName}>
-                      {item.product?.name}
+                      {item.product_name || "Product Name"}
                     </Typography>
                     <Typography sx={styles.itemMeta}>
                       QTY: {item.quantity}
@@ -212,7 +224,10 @@ export default function UserOrderDetailsPage({ session }) {
                 </Typography>
 
                 <Typography sx={styles.invoiceValue}>
-                  {order.shipping_address?.full_name}
+                  {/* ✅ CHANGE 5: Correct Shipping Address Display */}
+                  {order.shipping_address
+                    ? `${order.shipping_address.city || ''}, ${order.shipping_address.zip || ''}`
+                    : "N/A"}
                 </Typography>
 
                 <Divider sx={{ my: 3 }} />
@@ -305,7 +320,8 @@ const styles = {
     borderRadius: '20px',
     p: 4,
     boxShadow: '0 20px 40px rgba(0,0,0,0.03)',
-    mb: 4
+    mb: 4,
+    mt: 4
   },
   timelineContainer: {
     display: 'flex',
@@ -340,11 +356,6 @@ const styles = {
     position: 'absolute',
     top: 12, left: '50%', width: '100%', height: 2,
     zIndex: -1
-  },
-  trackingBox: {
-    bgcolor: '#f9f9f9',
-    p: 2, borderRadius: '12px',
-    border: '1px solid #eee'
   },
   // Items
   itemCard: {
@@ -404,9 +415,6 @@ const styles = {
       backgroundPosition: '0 0' // Simple jagged edge simulation
     }
   },
-  invoiceBlock: {
-    mb: 2
-  },
   invoiceLabel: {
     fontSize: '10px',
     fontWeight: 800,
@@ -422,21 +430,6 @@ const styles = {
     fontWeight: 600,
     lineHeight: 1.5,
     color: '#333'
-  },
-  costRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    mb: 1
-  },
-  costLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    color: '#666'
-  },
-  costValue: {
-    fontSize: '12px',
-    fontWeight: 800,
-    color: '#000'
   },
   invoiceBtn: {
     mt: 4,

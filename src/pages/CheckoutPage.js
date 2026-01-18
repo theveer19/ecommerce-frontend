@@ -99,12 +99,22 @@ export default function CheckoutPage() {
   const showMessage = (type, text) =>
     setSnackbar({ open: true, type, text });
 
+  // ✅ CHANGE 1: Backend Integration Fixes
   const saveOrderToBackend = async (method, paymentDetails = null) => {
     const { data } = await supabase.auth.getUser();
 
+    // ✅ CHANGE 2: Normalize Items (Prevent DB Errors)
+    const normalizedItems = itemsToShow.map(i => ({
+      id: i.id ?? null,
+      name: i.name ?? "Unnamed Product",
+      quantity: Number(i.quantity || 1),
+      price: Number(i.price || 0),
+      image_url: i.image_url || i.images?.[0] || null
+    }));
+
     const payload = {
       user_id: data?.user?.id || null,
-      items: itemsToShow,
+      items: normalizedItems, // Send normalized items
       subtotal,
       shipping_fee: 0,
       tax: 0,
@@ -121,7 +131,11 @@ export default function CheckoutPage() {
     });
 
     const json = await res.json();
-    if (!json.success) throw new Error();
+    
+    // ✅ CHANGE 1: Better Error Handling
+    if (!json.success) {
+      throw new Error(json.error || "Order failed on backend");
+    }
     return json.order;
   };
 
@@ -133,8 +147,10 @@ export default function CheckoutPage() {
         const order = await saveOrderToBackend("cod");
         if (!buyNowItem) clearCart();
         navigate("/thank-you", { state: { orderDetails: order } });
-      } catch {
-        showMessage("error", "Order failed");
+      } catch (err) {
+        // ✅ CHANGE 1: Show Real Error
+        console.error("ORDER ERROR:", err.message);
+        showMessage("error", err.message);
       } finally {
         setLoading(false);
       }
@@ -155,7 +171,7 @@ export default function CheckoutPage() {
       });
 
       const orderData = await res.json();
-      if (!orderData?.id) throw new Error();
+      if (!orderData?.id) throw new Error("Failed to create Razorpay order");
 
       const options = {
         key: RAZORPAY_KEY,
@@ -170,8 +186,9 @@ export default function CheckoutPage() {
             navigate("/thank-you", {
               state: { orderDetails: saved },
             });
-          } catch {
-            showMessage("error", "Payment done but order save failed");
+          } catch (err) {
+            console.error("PAYMENT SAVE ERROR:", err.message);
+            showMessage("error", "Payment successful but order save failed: " + err.message);
           } finally {
             setLoading(false);
           }
@@ -186,8 +203,9 @@ export default function CheckoutPage() {
       };
 
       new window.Razorpay(options).open();
-    } catch {
+    } catch (err) {
       setLoading(false);
+      console.error("PAYMENT INIT ERROR:", err);
       showMessage("error", "Payment initialization failed");
     }
   };
@@ -573,7 +591,7 @@ export default function CheckoutPage() {
                         background: 'linear-gradient(45deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1))',
                         border: '1px solid rgba(255,255,255,0.1)'
                     }}>
-                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Box sx={{ animation: 'bounce 2s infinite' }}>
                                 <CardGiftcard sx={{ color: '#ff4081' }} />
                             </Box>
@@ -585,8 +603,8 @@ export default function CheckoutPage() {
                                     Delivery + Mystery Gift
                                 </Typography>
                             </Box>
-                         </Box>
-                         <Typography sx={{ color: '#00e676', fontWeight: 900 }}>FREE</Typography>
+                          </Box>
+                          <Typography sx={{ color: '#00e676', fontWeight: 900 }}>FREE</Typography>
                     </Box>
 
                     <Divider sx={{ borderColor: '#333', my: 3 }} />
@@ -598,8 +616,8 @@ export default function CheckoutPage() {
 
                     {/* Trust Badges */}
                     <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center', opacity: 0.5 }}>
-                       <Security fontSize="small" />
-                       <Typography variant="caption">Guaranteed Secure Checkout</Typography>
+                        <Security fontSize="small" />
+                        <Typography variant="caption">Guaranteed Secure Checkout</Typography>
                     </Box>
                 </Paper>
             </Grid>
