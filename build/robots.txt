@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
 
+Disallow: /login
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /admin
+
 Sitemap: https://onet.co.in/sitemap.xml
