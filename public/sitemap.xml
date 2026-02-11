@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
   <url>
-    <loc>https://onet.co.in/</loc>
+    <loc>https://www.onet.co.in/</loc>
   </url>
+
   <url>
-    <loc>https://onet.co.in/products</loc>
+    <loc>https://www.onet.co.in/products</loc>
   </url>
+
   <url>
-    <loc>https://onet.co.in/about</loc>
+    <loc>https://www.onet.co.in/about</loc>
   </url>
+
   <url>
-    <loc>https://onet.co.in/contact</loc>
+    <loc>https://www.onet.co.in/contact</loc>
   </url>
+
 </urlset>
