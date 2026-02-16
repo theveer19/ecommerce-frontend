@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingBag, Search, X, Menu, User, LogOut, ChevronDown, ChevronUp } from "lucide-react";
-import { Box, Container, Collapse, Drawer, Input, IconButton, List, ListItem, ListItemText } from "@mui/material";
+import { ShoppingBag, Search, X, Menu, User, LogOut, ChevronDown, ChevronUp, Store } from "lucide-react";
+import { Box, Container, Collapse, Drawer, Input, IconButton, List, ListItem, ListItemText, Button } from "@mui/material";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar({ session, onLogout, userRole }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [apparelOpen, setApparelOpen] = useState(false); // Desktop Hover
-  const [mobileApparelOpen, setMobileApparelOpen] = useState(false); // Mobile Click
+  const [apparelOpen, setApparelOpen] = useState(false);
+  const [mobileApparelOpen, setMobileApparelOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,7 +18,6 @@ export default function Navbar({ session, onLogout, userRole }) {
 
   const isHomePage = location.pathname === "/";
 
-  // Handle Scroll Effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -35,7 +34,7 @@ export default function Navbar({ session, onLogout, userRole }) {
     }
   };
 
-  // --- 🎨 COLOR LOGIC ---
+  // --- 🎨 DYNAMIC COLOR LOGIC ---
   const isTransparent = isHomePage && !isScrolled;
   const textColor = isTransparent ? '#FFFFFF' : '#000000'; 
   const iconColor = isTransparent ? '#FFFFFF' : '#000000';
@@ -45,129 +44,84 @@ export default function Navbar({ session, onLogout, userRole }) {
     <>
       <style>
         {`
-          /* Minimalist Hover Line */
-          .nav-link-hover {
-            position: relative;
-            transition: opacity 0.3s ease;
-          }
-          .nav-link-hover:hover {
-            opacity: 0.7;
-          }
-          .nav-link-hover::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 1px;
-            bottom: -2px;
-            left: 0;
-            background: currentColor;
-            transition: width 0.3s ease;
-          }
-          .nav-link-hover:hover::after {
-            width: 100%;
-          }
-
-          /* 3D Menu Icon Style */
-          .menu-icon-3d {
-             filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));
-             transition: transform 0.1s ease;
-          }
-          .menu-icon-3d:active {
-             transform: translate(1px, 1px);
-             filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.3));
-          }
+          .nav-link-hover { position: relative; transition: opacity 0.3s ease; }
+          .nav-link-hover:hover { opacity: 0.7; }
+          .nav-link-hover::after { content: ''; position: absolute; width: 0; height: 1px; bottom: -2px; left: 0; background: currentColor; transition: width 0.3s ease; }
+          .nav-link-hover:hover::after { width: 100%; }
+          .menu-icon-3d { filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3)); transition: transform 0.1s ease; }
+          .menu-icon-3d:active { transform: translate(1px, 1px); filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.3)); }
         `}
       </style>
 
       {/* --- NAVBAR HEADER --- */}
       <header style={{
-        position: 'fixed',
-        top: '35px', 
-        left: 0,
-        right: 0,
-        height: '60px', 
+        position: 'fixed', top: '35px', left: 0, right: 0, height: '60px', 
         backgroundColor: isTransparent ? 'transparent' : '#FFFFFF', 
         borderBottom: isTransparent ? 'none' : '1px solid #f0f0f0',
-        transition: 'all 0.4s ease',
-        zIndex: 1500,
-        display: 'flex',
-        alignItems: 'center',
+        transition: 'all 0.4s ease', zIndex: 1500, display: 'flex', alignItems: 'center',
       }}>
         
         <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
           
-          {/* 1. LEFT: LOGO & MOBILE MENU */}
-          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: 'auto', md: '200px' } }}>
+          {/* 1. LEFT */}
+          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: 'auto', md: '250px' } }}>
             <IconButton 
               onClick={() => setMobileMenuOpen(true)}
-              sx={{ 
-                display: { xs: 'flex', md: 'none' }, 
-                color: iconColor, 
-                mr: 1,
-                '&:focus': { outline: 'none' }, 
-                '& .MuiTouchRipple-root': { color: 'rgba(0,0,0,0.2)' } 
-              }}
+              sx={{ display: { xs: 'flex', md: 'none' }, color: iconColor, mr: 1 }}
             >
-              {/* 3D STYLISH MENU ICON */}
               <Menu size={24} className={!isTransparent ? "menu-icon-3d" : ""} strokeWidth={2.5} />
             </IconButton>
-
-            {/* LOGO */}
-            <Link to="/" style={styles.logo(isTransparent)}>
-              OneT
-            </Link>
+            <Link to="/" style={styles.logo(isTransparent)}>OneT</Link>
           </Box>
 
-          {/* 2. CENTER: NAVIGATION (Desktop) */}
+          {/* 2. CENTER */}
           <Box sx={{ 
-            display: { xs: 'none', md: 'flex' }, 
-            gap: 4, 
-            position: 'absolute', 
-            left: '50%', 
-            transform: 'translateX(-50%)',
-            alignItems: 'center',
-            height: '100%'
+            display: { xs: 'none', md: 'flex' }, gap: 4, position: 'absolute', 
+            left: '50%', transform: 'translateX(-50%)', alignItems: 'center', height: '100%'
           }}>
-            <Link to="/products?sort=new" className="nav-link-hover" style={styles.navLink(textColor)}>
-              NEW IN
-            </Link>
+            <Link to="/products?sort=new" className="nav-link-hover" style={styles.navLink(textColor)}>NEW IN</Link>
             
             <div 
               onMouseEnter={() => setApparelOpen(true)}
               onMouseLeave={() => setApparelOpen(false)}
               style={{ height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
             >
-              <span className="nav-link-hover" style={styles.navLink(textColor)}>
-                APPAREL
-              </span>
+              <span className="nav-link-hover" style={styles.navLink(textColor)}>APPAREL</span>
             </div>
 
-            <Link to="/about" className="nav-link-hover" style={styles.navLink(textColor)}>
-              ABOUT
-            </Link>
+            <Link to="/about" className="nav-link-hover" style={styles.navLink(textColor)}>ABOUT</Link>
           </Box>
 
-          {/* 3. RIGHT: ICONS */}
-          <Box sx={{ 
-            width: { xs: 'auto', md: '300px' }, 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            alignItems: 'center', 
-            gap: { xs: 1.5, md: 3 } 
-          }}>
-            <IconButton onClick={() => setSearchOpen(true)} sx={{ color: iconColor, p: 1 }}>
-              <Search size={18} />
-            </IconButton>
+          {/* 3. RIGHT */}
+          <Box sx={{ width: { xs: 'auto', md: '350px' }, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: { xs: 1.5, md: 3 } }}>
+            
+            {/* 🟢 BECOME A VENDOR BUTTON (Desktop) */}
+            <Link to="/vendor/register" style={{ textDecoration: 'none', display: { xs: 'none', md: 'block' } }}>
+                <Button sx={{
+                    display: { xs: 'none', md: 'flex' },
+                    color: textColor,
+                    border: `1px solid ${textColor}`,
+                    padding: "4px 12px",
+                    fontSize: "0.65rem",
+                    fontWeight: 800,
+                    letterSpacing: "1px",
+                    borderRadius: 0,
+                    '&:hover': {
+                        backgroundColor: textColor,
+                        color: isTransparent ? '#000' : '#fff'
+                    }
+                }}>
+                    BECOME A VENDOR
+                </Button>
+            </Link>
+
+            <IconButton onClick={() => setSearchOpen(true)} sx={{ color: iconColor, p: 1 }}><Search size={18} /></IconButton>
             
             <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
               {session ? (
                 <>
                   <Link to="/orders" className="nav-link-hover" style={styles.textButton(textColor)}>ACCOUNT</Link>
-                  {isAdmin && (
-                    <Link to="/admin" style={{ ...styles.textButton(textColor), border: `1px solid ${textColor}`, padding: '2px 6px' }}>
-                      ADMIN
-                    </Link>
-                  )}
+                  {isAdmin && <Link to="/admin" style={{ ...styles.textButton(textColor), border: `1px solid ${textColor}`, padding: '2px 6px' }}>ADMIN</Link>}
                   <button onClick={onLogout} className="nav-link-hover" style={styles.textButton(textColor)}>LOGOUT</button>
                 </>
               ) : (
@@ -194,28 +148,18 @@ export default function Navbar({ session, onLogout, userRole }) {
         </Container>
       </header>
 
-      {/* --- DESKTOP MEGA MENU --- */}
+      {/* --- MEGA MENU --- */}
       <Collapse in={apparelOpen} timeout={300} sx={{ position: 'fixed', top: '95px', left: 0, right: 0, zIndex: 1400 }}>
-        <Box 
-          onMouseEnter={() => setApparelOpen(true)}
-          onMouseLeave={() => setApparelOpen(false)}
-          sx={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', padding: '40px 0' }}
-        >
+        <Box onMouseEnter={() => setApparelOpen(true)} onMouseLeave={() => setApparelOpen(false)} sx={{ backgroundColor: '#fff', borderBottom: '1px solid #eee', padding: '40px 0' }}>
           <Container maxWidth="lg">
             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 4, md: 15 }, justifyContent: 'center' }}>
               {['TOP WEAR', 'BOTTOM WEAR', 'ACCESSORIES'].map((title, i) => (
                 <Box key={title}>
                   <div style={styles.menuHeader}>{title}</div>
                   <div style={styles.menuList}>
-                    {i === 0 && ['TSHIRTS', 'HOODIES', 'JACKETS', 'SHIRTS'].map(item => (
-                      <Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>
-                    ))}
-                    {i === 1 && ['PANTS', 'CARGOS', 'SHORTS'].map(item => (
-                      <Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>
-                    ))}
-                    {i === 2 && ['CAPS', 'BAGS', 'JEWELRY'].map(item => (
-                      <Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>
-                    ))}
+                    {i === 0 && ['TSHIRTS', 'HOODIES', 'JACKETS', 'SHIRTS'].map(item => (<Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>))}
+                    {i === 1 && ['PANTS', 'CARGOS', 'SHORTS'].map(item => (<Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>))}
+                    {i === 2 && ['CAPS', 'BAGS', 'JEWELRY'].map(item => (<Link key={item} to={`/products?cat=${item.toLowerCase()}`} style={styles.menuItem}>{item}</Link>))}
                   </div>
                 </Box>
               ))}
@@ -228,18 +172,13 @@ export default function Navbar({ session, onLogout, userRole }) {
       <Drawer anchor="top" open={searchOpen} onClose={() => setSearchOpen(false)} PaperProps={{ sx: { height: '50vh', backgroundColor: '#fff', zIndex: 2000 } }} sx={{ zIndex: 2000 }}>
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <IconButton onClick={() => setSearchOpen(false)} sx={{ position: 'absolute', top: 20, right: 20, color: 'black' }}><X size={24} /></IconButton>
-          <Input 
-            autoFocus fullWidth disableUnderline placeholder="SEARCH" 
-            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyPress={handleSearch} 
-            sx={{ fontSize: '2rem', fontWeight: 600, textAlign: 'center', borderBottom: '1px solid #000', width: '80%', maxWidth: 600, '& input': { textAlign: 'center' } }} 
-          />
+          <Input autoFocus fullWidth disableUnderline placeholder="SEARCH" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyPress={handleSearch} sx={{ fontSize: '2rem', fontWeight: 600, textAlign: 'center', borderBottom: '1px solid #000', width: '80%', maxWidth: 600, '& input': { textAlign: 'center' } }} />
         </Box>
       </Drawer>
 
-      {/* --- MOBILE DRAWER (UPDATED) --- */}
+      {/* --- MOBILE DRAWER --- */}
       <Drawer anchor="left" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} PaperProps={{ sx: { width: '85%', maxWidth: '300px' } }} sx={{ zIndex: 1600 }}>
         <Box sx={{ p: 4 }}>
-          {/* Logo & Close Button */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Link to="/" style={{...styles.logo(false), color: 'black'}} onClick={() => setMobileMenuOpen(false)}>OneT</Link>
             <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: '#000' }}><X size={24} /></IconButton>
@@ -250,7 +189,6 @@ export default function Navbar({ session, onLogout, userRole }) {
               <ListItemText primary="NEW IN" primaryTypographyProps={styles.mobileLink} />
             </ListItem>
             
-            {/* 🟢 MOBILE APPAREL DROPDOWN */}
             <ListItem button onClick={() => setMobileApparelOpen(!mobileApparelOpen)} sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <ListItemText primary="APPAREL" primaryTypographyProps={styles.mobileLink} />
               {mobileApparelOpen ? <ChevronUp size={20} color="black" /> : <ChevronDown size={20} color="black" />}
@@ -269,6 +207,14 @@ export default function Navbar({ session, onLogout, userRole }) {
             <ListItem button component={Link} to="/about" onClick={() => setMobileMenuOpen(false)}>
               <ListItemText primary="ABOUT" primaryTypographyProps={styles.mobileLink} />
             </ListItem>
+
+            {/* 🟢 BECOME VENDOR MOBILE */}
+            <ListItem button component={Link} to="/vendor/register" onClick={() => setMobileMenuOpen(false)}>
+                <Store size={18} style={{ marginRight: 10, color: '#666' }} />
+                <ListItemText primary="BECOME A VENDOR" primaryTypographyProps={{...styles.mobileLink, fontSize: '14px', color: '#666'}} />
+            </ListItem>
+
+            <Box sx={{ my: 2, height: '1px', bgcolor: '#eee' }} />
 
             <ListItem button component={Link} to="/contact" onClick={() => setMobileMenuOpen(false)}>
               <ListItemText primary="CONTACT" primaryTypographyProps={styles.mobileLink} />
@@ -291,49 +237,12 @@ export default function Navbar({ session, onLogout, userRole }) {
 }
 
 const styles = {
-  logo: (isTransparent) => ({
-    fontSize: '20px', 
-    fontWeight: 800,
-    letterSpacing: '-0.5px',
-    textDecoration: 'none',
-    textTransform: 'uppercase',
-    color: isTransparent ? '#FFFFFF' : '#000000', 
-    transition: 'color 0.3s ease',
-  }),
-  
-  navLink: (color) => ({
-    fontSize: '10px', 
-    fontWeight: 600,
-    color: color,
-    textDecoration: 'none',
-    letterSpacing: '1px',
-    textTransform: 'uppercase'
-  }),
-  textButton: (color) => ({
-    background: 'none',
-    border: 'none',
-    fontSize: '10px',
-    fontWeight: 600,
-    color: color,
-    cursor: 'pointer',
-    textDecoration: 'none',
-    letterSpacing: '0.5px',
-    textTransform: 'uppercase'
-  }),
+  logo: (isTransparent) => ({ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px', textDecoration: 'none', textTransform: 'uppercase', color: isTransparent ? '#FFFFFF' : '#000000', transition: 'color 0.3s ease' }),
+  navLink: (color) => ({ fontSize: '10px', fontWeight: 600, color: color, textDecoration: 'none', letterSpacing: '1px', textTransform: 'uppercase' }),
+  textButton: (color) => ({ background: 'none', border: 'none', fontSize: '10px', fontWeight: 600, color: color, cursor: 'pointer', textDecoration: 'none', letterSpacing: '0.5px', textTransform: 'uppercase' }),
   menuHeader: { fontSize: '10px', fontWeight: 700, color: '#888', marginBottom: '20px', letterSpacing: '1px', textTransform: 'uppercase' },
   menuList: { display: 'flex', flexDirection: 'column', gap: '10px' },
   menuItem: { fontSize: '12px', fontWeight: 500, color: '#333', textDecoration: 'none', letterSpacing: '0.5px', transition: '0.2s', '&:hover': { color: '#000', paddingLeft: '5px' } },
-  
-  // 🟢 UPDATED MOBILE LINK STYLE (Black, 3D Effect)
-  mobileLink: { 
-    fontWeight: 900, 
-    fontSize: '18px', 
-    letterSpacing: '1px', 
-    color: '#000', // Forces Black color
-    textTransform: 'uppercase',
-    fontFamily: 'Assistant, sans-serif',
-    textShadow: '1px 1px 0px rgba(0,0,0,0.1)' // Subtle 3D Effect
-  },
-  
+  mobileLink: { fontWeight: 900, fontSize: '18px', letterSpacing: '1px', color: '#000', textTransform: 'uppercase', fontFamily: 'Assistant, sans-serif', textShadow: '1px 1px 0px rgba(0,0,0,0.1)' },
   mobileSubLink: { fontWeight: 600, fontSize: '12px', letterSpacing: '1px', color: '#555', textTransform: 'uppercase' }
 };
