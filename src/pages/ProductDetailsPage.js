@@ -5,114 +5,120 @@ import { useCart } from "../context/CartContext";
 import { 
   Box, Container, Grid, Typography, Button, 
   CircularProgress, IconButton, Divider, Chip,
-  Snackbar, Alert
+  Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
+  Breadcrumbs
 } from "@mui/material";
 import { 
   ShoppingBag, Heart, Share2, ArrowLeft, 
-  Truck, Shield, Check, Minus, Plus, Zap
+  Truck, Shield, Minus, Plus, Zap, ChevronDown, 
+  Ruler, RotateCcw, Star
 } from "lucide-react";
 
-// --- THEME STYLES (Clean B&W + Perfect Sizing) ---
+// --- THEME STYLES (High-End Fashion Look) ---
 const themeStyles = {
   pageBackground: {
     background: '#ffffff',
     minHeight: '100vh',
-    color: 'black',
+    color: '#1a1a1a',
     pb: 10,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center' // Vertically center content
   },
-  glassPanel: {
-    background: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(30px)',
-    borderRadius: '24px',
-    border: '1px solid rgba(0, 0, 0, 0.06)',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
-    p: { xs: 3, md: 5 }, // More padding
+  stickyContainer: {
+    position: { md: 'sticky' },
+    top: { md: '100px' },
+    height: 'fit-content',
+  },
+  mainImageContainer: {
+    width: '100%',
+    aspectRatio: '3/4',
+    overflow: 'hidden',
+    borderRadius: '4px',
+    backgroundColor: '#f4f4f4',
     position: 'relative',
-    overflow: 'hidden'
+    cursor: 'zoom-in'
   },
-  img3DWrapper: {
-    perspective: '1500px',
+  mainImage: {
     width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '20px'
-  },
-  img3D: {
-    width: '100%',
-    maxWidth: '450px', // RESTRICT WIDTH SO IT'S NOT HUGE
-    height: 'auto',
-    aspectRatio: '4/5', // Fashion Standard Ratio
+    height: '100%',
     objectFit: 'cover',
-    borderRadius: '12px',
-    boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.3)', // Sharp shadow
-    transition: 'transform 0.4s ease, box-shadow 0.4s ease',
-    transform: 'rotateY(-5deg) rotateX(2deg)', // Subtle 3D tilt
-    border: '1px solid rgba(0,0,0,0.05)',
-    '&:hover': {
-      transform: 'rotateY(0deg) rotateX(0deg) scale(1.02)',
-      boxShadow: '0 15px 30px rgba(0, 0, 0, 0.15)'
-    }
+    transition: 'transform 0.5s ease',
   },
-  glowButton: {
-    background: 'black',
-    color: 'white',
-    fontWeight: 900,
-    boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+  thumbnail: (active) => ({
+    width: '100%',
+    aspectRatio: '1/1',
+    objectFit: 'cover',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    border: active ? '1px solid #000' : '1px solid transparent',
+    opacity: active ? 1 : 0.6,
+    transition: 'all 0.2s'
+  }),
+  sizeButton: (selected) => ({
+    minWidth: '48px',
+    height: '48px',
+    borderRadius: '0px',
+    border: selected ? '1px solid #000' : '1px solid #e0e0e0',
+    color: selected ? '#fff' : '#000',
+    bgcolor: selected ? '#000' : 'transparent',
+    fontWeight: 600,
+    fontSize: '14px',
+    transition: 'all 0.2s',
     '&:hover': {
-      background: '#333',
-      transform: 'translateY(-2px)'
+      border: '1px solid #000',
+      bgcolor: selected ? '#333' : 'rgba(0,0,0,0.02)'
     }
+  }),
+  accordion: {
+    boxShadow: 'none',
+    borderBottom: '1px solid #f0f0f0',
+    '&:before': { display: 'none' },
+    '& .MuiAccordionSummary-root': { px: 0, minHeight: '60px' },
+    '& .MuiAccordionDetails-root': { px: 0, pb: 3, pt: 0 }
   }
 };
 
 // --- RELATED PRODUCT CARD ---
-const RelatedProductCard = ({ product }) => {
-  if (!product || !product.id) return null;
-  return (
-    <Link to={`/product/${product.id}`} style={{ textDecoration: 'none' }}>
-      <Box sx={{
-        background: '#fff', border: '1px solid #eee', borderRadius: '12px', overflow: 'hidden',
-        transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-5px)', border: '1px solid #000' }
-      }}>
-        <Box sx={{ position: 'relative', pt: '125%', bgcolor: '#f9f9f9' }}>
-          <img src={product.image_url} alt={product.name} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-        </Box>
-        <Box sx={{ p: 2 }}>
-          <Typography sx={{ color: 'black', fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {product.name}
-          </Typography>
-          <Typography sx={{ color: '#000', fontWeight: 700 }}>₹{product.price?.toLocaleString()}</Typography>
-        </Box>
+const RelatedProductCard = ({ product }) => (
+  <Link to={`/product/${product.id}`} style={{ textDecoration: 'none' }}>
+    <Box sx={{ cursor: 'pointer', group: 'hover' }}>
+      <Box sx={{ position: 'relative', overflow: 'hidden', mb: 2, aspectRatio: '3/4', bgcolor: '#f4f4f4' }}>
+        <img 
+          src={product.image_url} 
+          alt={product.name} 
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} 
+          className="hover-zoom"
+        />
+        <style>{`.hover-zoom:hover { transform: scale(1.05); }`}</style>
       </Box>
-    </Link>
-  );
-};
+      <Typography sx={{ color: '#000', fontWeight: 600, fontSize: '14px', mb: 0.5 }}>{product.name}</Typography>
+      <Typography sx={{ color: '#666', fontSize: '14px' }}>₹{product.price?.toLocaleString()}</Typography>
+    </Box>
+  </Link>
+);
 
-export default function ProductDetailsPage({ session }) {
+export default function ProductDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Interaction State
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [mainImage, setMainImage] = useState("");
+  const [activeImage, setActiveImage] = useState("");
+  const [parsedSizes, setParsedSizes] = useState([]);
   const [notification, setNotification] = useState({ open: false, message: "" });
-  const [relatedProducts, setRelatedProducts] = useState([]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    fetchProduct();
+  }, [id]);
+
   const fetchProduct = async () => {
     setLoading(true);
-
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabase.from("products").select("*").eq("id", id).single();
 
     if (error || !data) {
       navigate("/products");
@@ -120,139 +126,157 @@ export default function ProductDetailsPage({ session }) {
     }
 
     setProduct(data);
-    setMainImage(data.image_url);
+    setActiveImage(data.image_url);
 
-    const category = data.category?.trim().toLowerCase();
+    // ✅ ROBUST SIZE PARSING (Handles "S,M,L" string OR Array)
+    let sizes = [];
 
-    if (category) {
+if (data.sizes) {
+  if (Array.isArray(data.sizes)) {
+    sizes = data.sizes;
+  } 
+  else if (typeof data.sizes === "string") {
+    sizes = data.sizes.split(",").map(s => s.trim()).filter(Boolean);
+  }
+}
+
+setParsedSizes(sizes);
+
+
+    // Fetch Related
+    const categoryQuery = data.category ? data.category.split(' ')[0] : '';
+    if (categoryQuery) {
       const { data: related } = await supabase
         .from("products")
         .select("*")
-        .ilike("category", `%${category}%`)
+        .ilike("category", `%${categoryQuery}%`)
         .neq("id", id)
         .limit(4);
-
       setRelatedProducts(related || []);
     }
 
     setLoading(false);
   };
 
-  fetchProduct();
-}, [id, navigate]);
-
-
   const handleAddToCart = () => {
-    if (!selectedSize && product.sizes?.length > 0) { setNotification({ open: true, message: "⚠️ SELECT A SIZE" }); return; }
-    addToCart({ ...product, quantity, selectedSize, price: product.price });
-    setNotification({ open: true, message: "ADDED TO CART" });
+    if (parsedSizes.length > 0 && !selectedSize) {
+      setNotification({ open: true, message: "⚠️ Please select a size" });
+      return;
+    }
+    addToCart({ ...product, quantity, selectedSize: selectedSize || "One Size", price: product.price });
+    setNotification({ open: true, message: `Added ${quantity} item(s) to cart` });
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize && product.sizes?.length > 0) { setNotification({ open: true, message: "⚠️ SELECT A SIZE" }); return; }
-    addToCart({ ...product, quantity, selectedSize, price: product.price });
+    if (parsedSizes.length > 0 && !selectedSize) {
+      setNotification({ open: true, message: "⚠️ Please select a size" });
+      return;
+    }
+    addToCart({ ...product, quantity, selectedSize: selectedSize || "One Size", price: product.price });
     navigate("/cart");
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) { await navigator.share({ title: product.name, url }); } 
-    else { navigator.clipboard.writeText(url); setNotification({ open: true, message: "LINK COPIED" }); }
+    if (navigator.share) {
+      await navigator.share({ title: product.name, url: window.location.href });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      setNotification({ open: true, message: "Link copied to clipboard" });
+    }
   };
 
-  if (loading) return <Box sx={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><CircularProgress sx={{ color: 'black' }} /></Box>;
+  if (loading) return <Box sx={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><CircularProgress sx={{ color: 'black' }} /></Box>;
   if (!product) return null;
 
   return (
     <Box sx={themeStyles.pageBackground}>
-      <style>{`@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }`}</style>
-
-      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 } }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 }, pt: 4 }}>
         
-        {/* Navigation Bar */}
-        <Box sx={{ py: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button startIcon={<ArrowLeft />} onClick={() => navigate(-1)} sx={{ color: '#666', fontWeight: 700, '&:hover': { color: 'black', bgcolor: 'transparent' } }}>
-            BACK
-          </Button>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <IconButton onClick={handleShare} sx={{ color: 'black', border: '1px solid #eee' }}><Share2 size={20} /></IconButton>
-            <IconButton sx={{ color: 'black', border: '1px solid #eee' }}><Heart size={20} /></IconButton>
+        {/* Breadcrumbs */}
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Breadcrumbs separator="›" aria-label="breadcrumb" sx={{ fontSize: '12px', textTransform: 'uppercase' }}>
+            <Link to="/" style={{ color: '#999', textDecoration: 'none' }}>Home</Link>
+            <Link to="/products" style={{ color: '#999', textDecoration: 'none' }}>{product.category || 'Shop'}</Link>
+            <Typography color="text.primary" sx={{ fontSize: '12px', fontWeight: 600 }}>{product.name}</Typography>
+          </Breadcrumbs>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton size="small" onClick={handleShare}><Share2 size={18} /></IconButton>
+            <IconButton size="small"><Heart size={18} /></IconButton>
           </Box>
         </Box>
 
-        {/* MAIN CONTENT - VERTICALLY CENTERED GRID */}
-        <Grid container spacing={8} alignItems="center" justifyContent="center" sx={{ minHeight: '60vh' }}>
+        <Grid container spacing={{ xs: 4, md: 8 }}>
           
-          {/* LEFT: IMAGE SECTION (Centered & Sized Perfect) */}
-          <Grid item xs={12} md={6} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box sx={themeStyles.img3DWrapper}>
-              <Box sx={{ position: 'relative', width: '100%', maxWidth: '450px', animation: 'float 6s ease-in-out infinite' }}>
-                <img src={mainImage} alt={product.name} style={themeStyles.img3D} />
-                {product.featured && (
-                  <Chip label="FEATURED" sx={{ position: 'absolute', top: 20, left: -10, bgcolor: 'black', color: 'white', fontWeight: 900, borderRadius: 0 }} />
+          {/* --- LEFT: IMAGES --- */}
+          <Grid item xs={12} md={7}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column-reverse', md: 'row' }, gap: 2 }}>
+              
+              {/* Thumbnails (Vertical on Desktop, Horizontal on Mobile) */}
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'row', md: 'column' }, 
+                gap: 2, 
+                width: { xs: '100%', md: '80px' },
+                overflowX: 'auto'
+              }}>
+                <Box onClick={() => setActiveImage(product.image_url)} sx={{ flexShrink: 0 }}>
+                  <img src={product.image_url} alt="Main" style={themeStyles.thumbnail(activeImage === product.image_url)} />
+                </Box>
+                {product.extra_images?.map((img, index) => (
+                  <Box key={index} onClick={() => setActiveImage(img)} sx={{ flexShrink: 0 }}>
+                    <img src={img} alt={`View ${index + 1}`} style={themeStyles.thumbnail(activeImage === img)} />
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Main Image */}
+              <Box sx={themeStyles.mainImageContainer}>
+                <img src={activeImage} alt={product.name} style={themeStyles.mainImage} />
+                {product.stock <= 5 && product.stock > 0 && (
+                  <Chip label="LOW STOCK" sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#d32f2f', color: 'white', fontWeight: 700, borderRadius: 0, height: 24 }} />
+                )}
+                {product.stock === 0 && (
+                  <Chip label="SOLD OUT" sx={{ position: 'absolute', top: 16, left: 16, bgcolor: '#000', color: 'white', fontWeight: 700, borderRadius: 0, height: 24 }} />
                 )}
               </Box>
             </Box>
-
-            {/* Thumbnails */}
-            {product.extra_images?.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-                 <Box onClick={() => setMainImage(product.image_url)} sx={{ width: 60, height: 60, borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: mainImage === product.image_url ? '2px solid black' : '1px solid #eee' }}>
-                    <img src={product.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="main" />
-                 </Box>
-                 {product.extra_images.map((img, i) => (
-                  <Box key={i} onClick={() => setMainImage(img)} sx={{ width: 60, height: 60, borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: mainImage === img ? '2px solid black' : '1px solid #eee' }}>
-                    <img src={img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="extra" />
-                  </Box>
-                 ))}
-              </Box>
-            )}
           </Grid>
 
-          {/* RIGHT: DETAILS SECTION (Clean & Sharp) */}
-          <Grid item xs={12} md={6}>
-            <Box sx={themeStyles.glassPanel}>
+          {/* --- RIGHT: DETAILS (Sticky) --- */}
+          <Grid item xs={12} md={5}>
+            <Box sx={themeStyles.stickyContainer}>
               
-              <Typography sx={{ color: '#888', letterSpacing: '3px', fontSize: '11px', mb: 1, textTransform: 'uppercase', fontWeight: 800 }}>
-                {product.brand || 'ONE-T'}
-              </Typography>
-              
-              <Typography variant="h2" sx={{ fontWeight: 900, fontSize: { xs: '32px', md: '48px' }, mb: 2, lineHeight: 1 }}>
+              {/* Header */}
+              <Typography variant="h1" sx={{ fontSize: { xs: '24px', md: '32px' }, fontWeight: 700, mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {product.name}
               </Typography>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
-                <Typography sx={{ fontSize: '32px', fontWeight: 800 }}>₹{product.price?.toLocaleString()}</Typography>
-                {product.original_price > product.price && (
-                  <Typography sx={{ color: '#999', textDecoration: 'line-through', fontSize: '18px', fontWeight: 600 }}>
-                    ₹{product.original_price.toLocaleString()}
-                  </Typography>
-                )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                <Typography sx={{ fontSize: '20px', fontWeight: 600 }}>₹{product.price?.toLocaleString()}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#ffb400' }}>
+                  <Star size={14} fill="#ffb400" />
+                  <Typography sx={{ fontSize: '13px', color: '#000', fontWeight: 500 }}>4.8 (12 Reviews)</Typography>
+                </Box>
               </Box>
 
               <Divider sx={{ mb: 4 }} />
 
-              <Typography sx={{ color: '#444', lineHeight: 1.6, mb: 3, fontSize: '14px' }}>
-                {product.description}
-              </Typography>
-
-              {/* Sizes */}
-              {product.sizes?.length > 0 && (
+              {/* Size Selector */}
+              {parsedSizes.length > 0 && (
                 <Box sx={{ mb: 4 }}>
-                  <Typography sx={{ fontSize: '11px', fontWeight: 800, mb: 1.5, letterSpacing: '1px' }}>SELECT SIZE</Typography>
-                  <Box sx={{ display: 'flex', gap: 1.5 }}>
-                    {product.sizes.map((size) => (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 700 }}>SELECT SIZE</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', opacity: 0.7, '&:hover': { opacity: 1 } }}>
+                      <Ruler size={14} />
+                      <Typography sx={{ fontSize: '12px', textDecoration: 'underline' }}>Size Guide</Typography>
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                    {parsedSizes.map((size) => (
                       <Button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        sx={{
-                          minWidth: '45px', height: '45px', borderRadius: '8px',
-                          border: selectedSize === size ? '2px solid black' : '1px solid #eee',
-                          color: selectedSize === size ? 'white' : 'black',
-                          bgcolor: selectedSize === size ? 'black' : 'transparent',
-                          fontWeight: 700,
-                          '&:hover': { bgcolor: selectedSize === size ? 'black' : '#f5f5f5' }
-                        }}
+                        sx={themeStyles.sizeButton(selectedSize === size)}
+                        disableRipple
                       >
                         {size}
                       </Button>
@@ -261,54 +285,111 @@ export default function ProductDetailsPage({ session }) {
                 </Box>
               )}
 
-              {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#f9f9f9', borderRadius: '12px', border: '1px solid #eee', px: 1 }}>
-                  <IconButton size="small" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus size={16} /></IconButton>
-                  <Typography sx={{ fontWeight: 700, px: 2 }}>{quantity}</Typography>
-                  <IconButton size="small" onClick={() => setQuantity(quantity + 1)}><Plus size={16} /></IconButton>
+              {/* Quantity & Cart */}
+              <Box sx={{ mb: 4 }}>
+                <Typography sx={{ fontSize: '13px', fontWeight: 700, mb: 1.5 }}>QUANTITY</Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', px: 1, height: '48px' }}>
+                    <IconButton size="small" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}><Minus size={16} /></IconButton>
+                    <Typography sx={{ px: 2, fontWeight: 600, minWidth: '30px', textAlign: 'center' }}>{quantity}</Typography>
+                    <IconButton size="small" onClick={() => setQuantity(quantity + 1)} disabled={quantity >= product.stock}><Plus size={16} /></IconButton>
+                  </Box>
+                  <Button 
+                    fullWidth 
+                    onClick={handleAddToCart}
+                    disabled={product.stock === 0}
+                    sx={{ 
+                      bgcolor: 'black', color: 'white', fontWeight: 700, fontSize: '14px', borderRadius: 0,
+                      '&:hover': { bgcolor: '#333' },
+                      '&:disabled': { bgcolor: '#ccc' }
+                    }}
+                  >
+                    {product.stock === 0 ? "SOLD OUT" : "ADD TO CART"}
+                  </Button>
                 </Box>
-                <Button fullWidth onClick={handleAddToCart} variant="outlined" sx={{ py: 1.5, borderRadius: '12px', borderColor: 'black', color: 'black', fontWeight: 800, borderWidth: '2px', '&:hover': { borderWidth: '2px', bgcolor: '#f0f0f0', borderColor: 'black' } }}>
-                  ADD TO CART
-                </Button>
-                <Button fullWidth onClick={handleBuyNow} startIcon={<Zap fill="white" size={18} />} sx={{ ...themeStyles.glowButton, py: 1.5, borderRadius: '12px' }}>
-                  BUY NOW
+                <Button 
+                  fullWidth 
+                  onClick={handleBuyNow}
+                  disabled={product.stock === 0}
+                  sx={{ 
+                    mt: 2, border: '1px solid black', color: 'black', fontWeight: 700, fontSize: '14px', borderRadius: 0, height: '48px',
+                    '&:hover': { bgcolor: '#f9f9f9' }
+                  }}
+                >
+                  BUY IT NOW
                 </Button>
               </Box>
 
-              {/* Trust Badges */}
-              <Box sx={{ display: 'flex', gap: 4, pt: 3, borderTop: '1px solid #eee' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Truck size={18} />
-                  <Box><Typography sx={{ fontSize: '11px', fontWeight: 800 }}>FAST DELIVERY</Typography><Typography sx={{ color: '#666', fontSize: '10px' }}>2-4 Days</Typography></Box>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Shield size={18} />
-                  <Box><Typography sx={{ fontSize: '11px', fontWeight: 800 }}>AUTHENTIC</Typography><Typography sx={{ color: '#666', fontSize: '10px' }}>100% Verified</Typography></Box>
-                </Box>
+              {/* Accordions */}
+              <Box>
+                <Accordion defaultExpanded disableGutters elevation={0} sx={themeStyles.accordion}>
+                  <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                    <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>DESCRIPTION</Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography sx={{ fontSize: '14px', color: '#555', lineHeight: 1.6 }}>
+                      {product.description || "No description available for this product."}
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion disableGutters elevation={0} sx={themeStyles.accordion}>
+                  <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Truck size={18} />
+                      <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>DELIVERY & SHIPPING</Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography sx={{ fontSize: '13px', color: '#555', lineHeight: 1.6 }}>
+                      • Free shipping on orders over ₹1499.<br />
+                      • Standard delivery: 3-5 business days.<br />
+                      • Express delivery available at checkout.
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion disableGutters elevation={0} sx={themeStyles.accordion}>
+                  <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <RotateCcw size={18} />
+                      <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>RETURNS & EXCHANGES</Typography>
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography sx={{ fontSize: '13px', color: '#555', lineHeight: 1.6 }}>
+                      Easy 7-day return policy. Items must be unworn, unwashed, and with original tags attached.
+                    </Typography>
+                  </AccordionDetails>
+                </Accordion>
               </Box>
 
             </Box>
           </Grid>
         </Grid>
 
-        {/* RELATED PRODUCTS */}
+        {/* --- RELATED PRODUCTS SECTION --- */}
         {relatedProducts.length > 0 && (
-          <Box sx={{ mt: 15 }}>
-            <Typography variant="h4" sx={{ textAlign: 'center', fontWeight: 900, mb: 6, textTransform: 'uppercase', letterSpacing: '2px' }}>
+          <Box sx={{ mt: 15, mb: 5 }}>
+            <Divider sx={{ mb: 6 }} />
+            <Typography variant="h4" sx={{ textAlign: 'center', fontWeight: 800, mb: 6, textTransform: 'uppercase', fontSize: '24px' }}>
               You May Also Like
             </Typography>
-            <Grid container spacing={3}>
+            <Grid container spacing={4}>
               {relatedProducts.map((p) => (
-                <Grid item xs={6} md={3} key={p.id}><RelatedProductCard product={p} /></Grid>
+                <Grid item xs={6} md={3} key={p.id}>
+                  <RelatedProductCard product={p} />
+                </Grid>
               ))}
             </Grid>
           </Box>
         )}
+
       </Container>
 
+      {/* Notifications */}
       <Snackbar open={notification.open} autoHideDuration={3000} onClose={() => setNotification({ ...notification, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity="success" variant="filled" sx={{ bgcolor: 'black', color: 'white', fontWeight: 800, borderRadius: '50px' }}>
+        <Alert severity="success" variant="filled" sx={{ bgcolor: '#000', color: '#fff', borderRadius: 0 }}>
           {notification.message}
         </Alert>
       </Snackbar>

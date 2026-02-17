@@ -56,6 +56,7 @@ export default function ProductForm() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [stock, setStock] = useState("0");
+  const [sizes, setSizes] = useState(""); // ✅ Step 1: Changed to 'sizes' (plural string for input)
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [brand, setBrand] = useState("");
@@ -63,7 +64,6 @@ export default function ProductForm() {
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // ✅ UPDATED: Categories matching your Navbar Links EXACTLY
   const categories = [
     { value: "tshirts", label: "T-Shirts" },
     { value: "hoodies", label: "Hoodies" },
@@ -79,17 +79,14 @@ export default function ProductForm() {
     { value: "other", label: "Other" }
   ];
 
-  // Steps
   const steps = ['Basic Info', 'Pricing & Stock', 'Image', 'Review'];
 
-  // Fetch product if editing
   useEffect(() => {
     if (isEditMode) {
       fetchProduct();
     }
   }, [id]);
 
-  // Fetch product data
   const fetchProduct = async () => {
     setLoading(true);
     try {
@@ -107,6 +104,10 @@ export default function ProductForm() {
         setPrice(data.price?.toString() || "");
         setCategory(data.category || "");
         setStock(data.stock?.toString() || "0");
+        
+        // ✅ Step 2: Convert JSONB array to Comma Separated String for editing
+        setSizes(Array.isArray(data.sizes) ? data.sizes.join(", ") : ""); 
+        
         setImagePreview(data.image_url || "");
         setBrand(data.brand || "");
         setSku(data.sku || "");
@@ -126,7 +127,6 @@ export default function ProductForm() {
     }
   };
 
-  // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -147,7 +147,6 @@ export default function ProductForm() {
     }
   };
 
-  // Upload image to Supabase
   const uploadImage = async (file) => {
     try {
       setUploading(true);
@@ -182,7 +181,6 @@ export default function ProductForm() {
     setSnackbar({ open: true, message, severity });
   };
 
-  // Validate current step
   const validateCurrentStep = () => {
     switch (activeStep) {
       case 0: 
@@ -258,8 +256,12 @@ export default function ProductForm() {
         name: name.trim(),
         description: description.trim(),
         price: parseFloat(price),
-        category, // This now saves 'tshirts', 'hoodies', etc.
+        category,
         stock: parseInt(stock) || 0,
+        
+        // ✅ Step 4: Convert string -> Array for DB storage
+        sizes: sizes ? sizes.split(",").map(s => s.trim()).filter(Boolean) : [],
+        
         image_url: imageUrl,
         brand: brand.trim() || null,
         sku: sku.trim() || `SKU-${Date.now()}`,
@@ -375,7 +377,6 @@ export default function ProductForm() {
                 />
               </Grid>
               <Grid item xs={12} md={6}>
-                {/* ✅ UPDATED CATEGORY SELECTOR */}
                 <FormControl fullWidth required sx={{ mb: 2 }}>
                   <InputLabel>Category *</InputLabel>
                   <Select
@@ -441,6 +442,17 @@ export default function ProductForm() {
                   fullWidth
                   InputProps={{ inputProps: { min: 0 } }}
                   sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                {/* ✅ Step 3: Updated TextField for 'sizes' */}
+                <TextField
+                  label="Sizes (comma separated)"
+                  value={sizes}
+                  onChange={(e) => setSizes(e.target.value)}
+                  fullWidth
+                  sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                  placeholder="e.g. S, M, L, XL or 42, 44"
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -552,7 +564,6 @@ export default function ProductForm() {
         );
       
       case 3:
-        // Find readable label for the selected category
         const categoryLabel = categories.find(c => c.value === category)?.label || category || "Not specified";
 
         return (
@@ -590,6 +601,11 @@ export default function ProductForm() {
                         <Typography variant="body1" sx={{ fontWeight: 600, color: parseInt(stock) < 10 ? '#EF4444' : '#22C55E' }}>
                           {stock} units
                         </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        {/* ✅ Step 5: Updated Review Display */}
+                        <Typography variant="body2" sx={{ color: '#6B7280', mb: 0.5 }}>Sizes:</Typography>
+                        <Typography variant="body1" fontWeight={600}>{sizes || "N/A"}</Typography>
                       </Grid>
                     </Grid>
                   </CardContent>

@@ -36,6 +36,7 @@ import {
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Replace with your actual backend URL if different
 const BACKEND_URL = "https://ecommerce-backend-qqhi.onrender.com";
 const RAZORPAY_KEY = process.env.REACT_APP_RAZORPAY_KEY_ID;
 const steps = ["Shipping", "Payment", "Review"];
@@ -73,6 +74,7 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
 
+  // ✅ CALCULATION: Pure Subtotal (No Tax, No Shipping)
   const subtotal = useMemo(
     () =>
       itemsToShow.reduce(
@@ -82,7 +84,7 @@ export default function CheckoutPage() {
     [itemsToShow]
   );
 
-  const totalAmount = subtotal;
+  const totalAmount = subtotal; // Final amount is just the subtotal
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -99,25 +101,27 @@ export default function CheckoutPage() {
   const showMessage = (type, text) =>
     setSnackbar({ open: true, type, text });
 
-  // ✅ CHANGE 1: Backend Integration Fixes
+  // ✅ BACKEND SAVE LOGIC
   const saveOrderToBackend = async (method, paymentDetails = null) => {
     const { data } = await supabase.auth.getUser();
 
-    // ✅ CHANGE 2: Normalize Items (Prevent DB Errors)
+    // ✅ CRITICAL: Include vendor_id and size for Vendor Dashboard support
     const normalizedItems = itemsToShow.map(i => ({
       id: i.id ?? null,
       name: i.name ?? "Unnamed Product",
       quantity: Number(i.quantity || 1),
       price: Number(i.price || 0),
-      image_url: i.image_url || i.images?.[0] || null
+      image_url: i.image_url || i.images?.[0] || null,
+      vendor_id: i.vendor_id || null, // Link to Vendor
+      size: i.selectedSize || i.size || null // Save Selected Size
     }));
 
     const payload = {
       user_id: data?.user?.id || null,
-      items: normalizedItems, // Send normalized items
+      items: normalizedItems,
       subtotal,
-      shipping_fee: 0,
-      tax: 0,
+      shipping_fee: 0, // ✅ Explicitly 0
+      tax: 0,          // ✅ Explicitly 0
       total_amount: Number(totalAmount.toFixed(2)),
       shipping_info: shippingInfo,
       payment_method: method,
@@ -132,7 +136,6 @@ export default function CheckoutPage() {
 
     const json = await res.json();
     
-    // ✅ CHANGE 1: Better Error Handling
     if (!json.success) {
       throw new Error(json.error || "Order failed on backend");
     }
@@ -148,7 +151,6 @@ export default function CheckoutPage() {
         if (!buyNowItem) clearCart();
         navigate("/thank-you", { state: { orderDetails: order } });
       } catch (err) {
-        // ✅ CHANGE 1: Show Real Error
         console.error("ORDER ERROR:", err.message);
         showMessage("error", err.message);
       } finally {
@@ -513,6 +515,9 @@ export default function CheckoutPage() {
                                         <Box sx={{ flex: 1 }}>
                                             <Typography fontWeight={800} fontSize="1.1rem">{item.name}</Typography>
                                             <Typography color="text.secondary" variant="body2">Qty: {item.quantity}</Typography>
+                                            {item.selectedSize && (
+                                                <Typography color="text.secondary" variant="body2">Size: {item.selectedSize}</Typography>
+                                            )}
                                         </Box>
                                         <Typography fontWeight={700}>₹{item.price}</Typography>
                                     </CardContent>
@@ -580,7 +585,7 @@ export default function CheckoutPage() {
                         <Typography sx={{ color: '#fff' }}>₹{subtotal.toFixed(2)}</Typography>
                     </Box>
                     
-                    {/* MYSTERY GIFT PROMO */}
+                    {/* MYSTERY GIFT PROMO - INDICATES FREE SHIPPING */}
                     <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 
