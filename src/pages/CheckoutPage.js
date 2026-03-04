@@ -37,7 +37,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 // Replace with your actual backend URL if different
-const BACKEND_URL = "https://ecommerce-backend-qqhi.onrender.com";
+const BACKEND_URL = "https://api.onet.co.in";
 const RAZORPAY_KEY = process.env.REACT_APP_RAZORPAY_KEY_ID;
 const steps = ["Shipping", "Payment", "Review"];
 
